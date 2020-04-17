@@ -154,6 +154,8 @@ void TW_CALL makeScale(void *)
     }
 }
 
+// * Radius callbacks
+
 void TW_CALL setRepulsion(const void *value, void *clientData)
 {
     swarm.setRepulsionRadius(*(const float *)value);
@@ -184,6 +186,38 @@ void TW_CALL getAttraction(void *value, void *clientData)
     *(float *)value = swarm.getAttractionRadius();
 }
 
+// * Blind angle, speed and maximum force callbacks
+
+void TW_CALL setBlindAngle(const void *value, void *clientData)
+{
+    swarm.setBlindAngle(*(const float *)value);
+}
+
+void TW_CALL setSpeed(const void *value, void *clientData)
+{
+    swarm.setSpeed(*(const float *)value);
+}
+
+void TW_CALL setMaxForce(const void *value, void *clientData)
+{
+    swarm.setMaxForce(*(const float *)value);
+}
+
+void TW_CALL getBlindAngle(void *value, void *clientData)
+{
+    *(float *)value = swarm.getBlindAngle();
+}
+
+void TW_CALL getSpeed(void *value, void *clientData)
+{
+    *(float *)value = swarm.getSpeed();
+}
+
+void TW_CALL getMaxForce(void *value, void *clientData)
+{
+    *(float *)value = swarm.getMaxForce();
+}
+
 /**
  * Define the UI elements
  * todo refactor to own class?
@@ -204,11 +238,9 @@ void defineUI()
     TwAddVarCB(upperBar, "Attraction Radius", TW_TYPE_FLOAT, setAttraction, getAttraction, &swarm, "min=71 max=150 step=1 keyIncr=a keyDecr=A help='Set repulsion radius.'");
 
     // control blind angle, speed and maximum force
-    // ! inappropriate behaviour, properties should be private
-    // todo make properties private
-    TwAddVarRW(upperBar, "Blind angle", TW_TYPE_FLOAT, &swarm.blindAngle, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
-    TwAddVarRW(upperBar, "Speed", TW_TYPE_FLOAT, &swarm.speed,"min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
-    TwAddVarRW(upperBar, "Maximum Force", TW_TYPE_FLOAT, &swarm.maxForce,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
+    TwAddVarCB(upperBar, "Blind angle", TW_TYPE_FLOAT, setBlindAngle, getBlindAngle, &swarm, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
+    TwAddVarCB(upperBar, "Speed", TW_TYPE_FLOAT, setSpeed, getSpeed, &swarm, "min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
+    TwAddVarCB(upperBar, "Maximum Force", TW_TYPE_FLOAT, setMaxForce, getMaxForce, &swarm,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
 
     // control theta manually/check value
     TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");

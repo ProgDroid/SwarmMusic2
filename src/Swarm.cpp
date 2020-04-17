@@ -92,6 +92,36 @@ void Swarm::setAttractionRadius(float value)
     this->radiusAttraction = value;
 }
 
+float Swarm::getBlindAngle()
+{
+    return this->blindAngle;
+}
+
+float Swarm::getSpeed()
+{
+    return this->speed;
+}
+
+float Swarm::getMaxForce()
+{
+    return this->maxForce;
+}
+
+void Swarm::setBlindAngle(float value)
+{
+    this->blindAngle = value;
+}
+
+void Swarm::setSpeed(float value)
+{
+    this->speed = value;
+}
+
+void Swarm::setMaxForce(float value)
+{
+    this->maxForce = value;
+}
+
 Triplet Swarm::getAveragePosition()
 {
     return this->averagePosition;
