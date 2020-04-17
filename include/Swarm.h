@@ -19,12 +19,12 @@ private:
 
     Triplet averagePosition;
 
-public:
-    // ! for UI to work
-    // todo change UI so this can become private
     float radiusRepulsion;
     float radiusOrientation;
     float radiusAttraction;
+public:
+    // ! for UI to work
+    // todo change UI so this can become private
     float blindAngle;
     float speed;
     float maxForce;
@@ -38,6 +38,10 @@ public:
     float getRepulsionRadius();
     float getOrientationRadius();
     float getAttractionRadius();
+
+    void setRepulsionRadius(float value);
+    void setOrientationRadius(float value);
+    void setAttractionRadius(float value);
 
     Triplet getAveragePosition();
 

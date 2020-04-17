@@ -59,8 +59,8 @@ int   pitchMax             = 96;
 int   GUIscale             = 0;
 bool  mute                 = false;
 Swarm swarm;
-TwBar *leftBar;
-TwBar *rightBar;
+TwBar *upperBar;
+TwBar *lowerBar;
 long pitch;
 float velocity;
 float noteLength;
@@ -154,6 +154,36 @@ void TW_CALL makeScale(void *)
     }
 }
 
+void TW_CALL setRepulsion(const void *value, void *clientData)
+{
+    swarm.setRepulsionRadius(*(const float *)value);
+}
+
+void TW_CALL setOrientation(const void *value, void *clientData)
+{
+    swarm.setOrientationRadius(*(const float *)value);
+}
+
+void TW_CALL setAttraction(const void *value, void *clientData)
+{
+    swarm.setAttractionRadius(*(const float *)value);
+}
+
+void TW_CALL getRepulsion(void *value, void *clientData)
+{
+    *(float *)value = swarm.getRepulsionRadius();
+}
+
+void TW_CALL getOrientation(void *value, void *clientData)
+{
+    *(float *)value = swarm.getOrientationRadius();
+}
+
+void TW_CALL getAttraction(void *value, void *clientData)
+{
+    *(float *)value = swarm.getAttractionRadius();
+}
+
 /**
  * Define the UI elements
  * todo refactor to own class?
@@ -166,27 +196,25 @@ void defineUI()
     TwDefine("GLOBAL help='The Free Sound of Self-Organisation' fontsize=1 fontresizable=false");
 
     // left sidebar
-    leftBar = TwNewBar("Swarm Properties");
+    upperBar = TwNewBar("Swarm Properties");
     TwDefine("'Swarm Properties' position='0 0' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
     // control radiuses
-    // ! inappropriate behaviour, radiuses should be private
-    // todo make radiuses private
-    TwAddVarRW(leftBar, "Repulsion Radius", TW_TYPE_FLOAT, &swarm.radiusRepulsion, "min=10 max=40 step=1 keyIncr=r keyDecr=R help='Set repulsion radius.'");
-    TwAddVarRW(leftBar,"Orientation Radius",TW_TYPE_FLOAT, &swarm.radiusOrientation, "min=41 max=70 step=1 keyIncr=o keyDecr=O help='Set orientation radius.'");
-    TwAddVarRW(leftBar, "Attraction Radius",TW_TYPE_FLOAT, &swarm.radiusAttraction, "min=71 max=150 step=1 keyIncr=a keyDecr=A help='Set repulsion radius.'");
+    TwAddVarCB(upperBar, "Repulsion Radius", TW_TYPE_FLOAT, setRepulsion, getRepulsion, &swarm, "min=10 max=40 step=1 keyIncr=r keyDecr=R help='Set repulsion radius.'");
+    TwAddVarCB(upperBar, "Orientation Radius", TW_TYPE_FLOAT, setOrientation, getOrientation, &swarm, "min=41 max=70 step=1 keyIncr=o keyDecr=O help='Set orientation radius.'");
+    TwAddVarCB(upperBar, "Attraction Radius", TW_TYPE_FLOAT, setAttraction, getAttraction, &swarm, "min=71 max=150 step=1 keyIncr=a keyDecr=A help='Set repulsion radius.'");
 
     // control blind angle, speed and maximum force
     // ! inappropriate behaviour, properties should be private
     // todo make properties private
-    TwAddVarRW(leftBar, "Blind angle", TW_TYPE_FLOAT, &swarm.blindAngle, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
-    TwAddVarRW(leftBar, "Speed", TW_TYPE_FLOAT, &swarm.speed,"min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
-    TwAddVarRW(leftBar, "Maximum Force", TW_TYPE_FLOAT, &swarm.maxForce,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
+    TwAddVarRW(upperBar, "Blind angle", TW_TYPE_FLOAT, &swarm.blindAngle, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
+    TwAddVarRW(upperBar, "Speed", TW_TYPE_FLOAT, &swarm.speed,"min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
+    TwAddVarRW(upperBar, "Maximum Force", TW_TYPE_FLOAT, &swarm.maxForce,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
 
     // control theta manually/check value
-    TwAddVarRW(leftBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
+    TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
 
     // right sidebar
-    rightBar = TwNewBar("Musical Properties");
+    lowerBar = TwNewBar("Musical Properties");
     TwDefine("'Musical Properties' position='0 150' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
     // control chance of note being played
     TwEnumVal styleMode[] =
@@ -198,7 +226,7 @@ void defineUI()
         {FIREANDFLAMES, "Insane"}
     };
     TwType modeType = TwDefineEnum("Style", styleMode, 5);
-    TwAddVarRW(rightBar, "Style", modeType, &style, "keyIncr=n keyDecr=N help='From a gloomy to non-stop.'");
+    TwAddVarRW(lowerBar, "Style", modeType, &style, "keyIncr=n keyDecr=N help='From a gloomy to non-stop.'");
 
     // control whether to get random coordinates from agents or average of all
     TwEnumVal swarmMode[] =
@@ -207,7 +235,7 @@ void defineUI()
         {AVERAGE, "Average"},
     };
     TwType swarmType = TwDefineEnum("Mapping", swarmMode, 2);
-    TwAddVarRW(rightBar, "Mapping", swarmType, &swarm.swarmMode, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
+    TwAddVarRW(lowerBar, "Mapping", swarmType, &swarm.swarmMode, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
 
     TwEnumVal pitchMode[] =
     {
@@ -222,10 +250,10 @@ void defineUI()
     TwType pitchType = TwDefineEnum("Pitches", pitchMode, 25);
 
     // pick pitch for new attractor
-    TwAddVarRW(rightBar, "Pitch", pitchType, &GUIpitch, "label='Pitch for attractors or scale' keyIncr='p' keyDecr='P' help='The pitch for attractors to be added.'");
+    TwAddVarRW(lowerBar, "Pitch", pitchType, &GUIpitch, "label='Pitch for attractors or scale' keyIncr='p' keyDecr='P' help='The pitch for attractors to be added.'");
 
     // add attractor
-    TwAddButton(rightBar, "Add Attractor", addAttr, nullptr, "label='Add an attractor' help='Add attractor with pitch from above.'");
+    TwAddButton(lowerBar, "Add Attractor", addAttr, nullptr, "label='Add an attractor' help='Add attractor with pitch from above.'");
 
     // pick scale type
     TwEnumVal scaleMode[] =
@@ -236,13 +264,13 @@ void defineUI()
         {BLUES, "Blues"},
     };
     TwType scalesType = TwDefineEnum("Scale Type", scaleMode, 4);
-    TwAddVarRW(rightBar, "Scale Type", scalesType, &GUIscale, "keyIncr=t \
+    TwAddVarRW(lowerBar, "Scale Type", scalesType, &GUIscale, "keyIncr=t \
              keyDecr=T help='Pick the type of scale to be added with attractors.'");
     // button to make scale based on pitch
-    TwAddButton(rightBar, "Add Scale", makeScale, nullptr, "label='Add a scale' \
+    TwAddButton(lowerBar, "Add Scale", makeScale, nullptr, "label='Add a scale' \
               help='Add a scale with the pitch above as root.'");
     // button to mute/unmute
-    TwAddButton(rightBar, "Mute On/Off", muteSound, nullptr, "label='Mute On/Off' \
+    TwAddButton(lowerBar, "Mute On/Off", muteSound, nullptr, "label='Mute On/Off' \
               help='Mute sound output.'");
 }
 

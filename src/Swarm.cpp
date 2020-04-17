@@ -77,6 +77,21 @@ float Swarm::getAttractionRadius()
     return this->radiusAttraction;
 }
 
+void Swarm::setRepulsionRadius(float value)
+{
+    this->radiusRepulsion = value;
+}
+
+void Swarm::setOrientationRadius(float value)
+{
+    this->radiusOrientation = value;
+}
+
+void Swarm::setAttractionRadius(float value)
+{
+    this->radiusAttraction = value;
+}
+
 Triplet Swarm::getAveragePosition()
 {
     return this->averagePosition;
