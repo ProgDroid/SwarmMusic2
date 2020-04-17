@@ -19,17 +19,15 @@ private:
 
     Triplet averagePosition;
 
-public:
-    // ! for UI to work
-    // todo change UI so this can become private
     float radiusRepulsion;
     float radiusOrientation;
     float radiusAttraction;
+
     float blindAngle;
     float speed;
     float maxForce;
     int swarmMode;
-
+public:
     Swarm();
 
     int getSize();
@@ -38,6 +36,21 @@ public:
     float getRepulsionRadius();
     float getOrientationRadius();
     float getAttractionRadius();
+
+    void setRepulsionRadius(float value);
+    void setOrientationRadius(float value);
+    void setAttractionRadius(float value);
+
+    float getBlindAngle();
+    float getSpeed();
+    float getMaxForce();
+
+    void setBlindAngle(float value);
+    void setSpeed(float value);
+    void setMaxForce(float value);
+
+    int getSwarmMode();
+    void setSwarmMode(int value);
 
     Triplet getAveragePosition();
 
