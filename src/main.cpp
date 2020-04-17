@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <AntTweakBar.h>
 #include <GL/freeglut.h>
+#include <GLFW/glfw3.h>
 #include <math.h>
 #include <random>
 #include <stdio.h>
@@ -102,6 +103,7 @@ void TW_CALL makeScale(void *)
 
     std::vector<int> intervals;
 
+    // todo scales as objects?
     if (scaleType == MAJOR)
     {
         intervals.reserve(MAJOR_SIZE);
@@ -246,13 +248,13 @@ void defineUI()
 
 void drawWireCube()
 {
-    glColor4f(0.0, 0.0, 0.0, 1.0);
-    glPushMatrix();
-    glutWireCube(800.0);
-    glPopMatrix();
+    // glColor4f(0.0, 0.0, 0.0, 1.0);
+    // glPushMatrix();
+    // glutWireCube(800.0);
+    // glPopMatrix();
 }
 
-void display()
+void render(GLFWwindow* window)
 {
     glLoadIdentity();
     gluLookAt(1250 * sin(theta * (PI / 180)), 500.0, 1250 * cos(theta * (PI / 180)),
@@ -262,17 +264,16 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT);
 
     swarm.drawAgents();
-    drawWireCube();
+    // drawWireCube();
     swarm.drawAttractors();
 
     // draw UI
     TwDraw();
-
-    glutSwapBuffers();
 }
 
-void reshape(int width, int height)
+void reshape(GLFWwindow* window, int width, int height)
 {
+    printf("welele");
     glClearColor(OLIVEBLACK, OLIVEBLACK, OLIVEBLACK, 1.0);
     glViewport(0, 0, (GLsizei) width, (GLsizei) height);
     glMatrixMode(GL_PROJECTION);
@@ -285,12 +286,12 @@ void reshape(int width, int height)
 
 void idle()
 {
-    glutPostRedisplay();
+    // glutPostRedisplay();
 }
 
-void special(int key, int x, int y)
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLUT_KEY_LEFT)
+    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
     {
         if (theta <= 0.0)
         {
@@ -302,7 +303,7 @@ void special(int key, int x, int y)
         }
     } // LEFT
 
-    if (key == GLUT_KEY_RIGHT)
+    if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
     {
         if (theta >= 359.5)
         {
@@ -315,23 +316,21 @@ void special(int key, int x, int y)
     } // RIGHT
 
     // to exit cleanly
-    if (key == GLUT_KEY_HOME)
+    if (key == GLFW_KEY_HOME && action == GLFW_PRESS)
     {
-        glutLeaveMainLoop();
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
         canExit = true;
     } // HOME
 
-    if (key == GLUT_KEY_PAGE_UP)
+    if (key == GLUT_KEY_PAGE_UP && action == GLFW_PRESS)
     {
         swarm.resetAll();
     }
 
-    if (key == GLUT_KEY_PAGE_DOWN)
+    if (key == GLUT_KEY_PAGE_DOWN && action == GLFW_PRESS)
     {
         swarm.resetAttractors();
     }
-
-    glutPostRedisplay();
 }
 
 int tick(
@@ -494,45 +493,96 @@ void music()
  * @return void
  */
 void timer(int val) {
-    glutPostRedisplay();
-    glutTimerFunc(16, timer, 0);
+    // glutPostRedisplay();
+    // glutTimerFunc(16, timer, 0);
     swarm.swarm();
     playMusic();
 }
 
-void initGraphics(int argc, char *argv[])
+void initGraphics()
 {
-    glutInit(&argc, argv);
-    glutInitWindowSize(1280, 720);
-    glutInitWindowPosition(100, 100);
+    if (!glfwInit())
+    {
+        glfwTerminate();
+        std::exit(EXIT_FAILURE);
+    };
+    // glutInit(&argc, argv);
+    // glutInitWindowSize(1280, 720);
+    // glutInitWindowPosition(100, 100);
     positionX = 1280 - 200;
-    glutInitDisplayMode(GLUT_DOUBLE);
-    glutCreateWindow("Swarm Music");
-    glutDisplayFunc(display);
-    glutSpecialFunc(special);
-    glutReshapeFunc(reshape);
-    glutIdleFunc(idle);
-    glutTimerFunc(0, timer, 0);
+    // glutInitDisplayMode(GLUT_DOUBLE);
+    // glutCreateWindow("Swarm Music");
+    // glutDisplayFunc(display);
+    // glutSpecialFunc(special);
+    // glutReshapeFunc(reshape);
+    // glutIdleFunc(idle);
+    // glutTimerFunc(0, timer, 0);
+}
+
+void errorCallback(int error, const char* description)
+{
+    fprintf(stderr, "Error: %s\n", description);
 }
 
 int main(int argc, char *argv[])
 {
-    initGraphics(argc, argv);
+    // initGraphics();
+    // glutInit(&argc, argv);
+    // glfwSetKeyCallback(window, (GLFWkeyfun) special);
+    // glfwGetWindowSize(window, NULL, NULL);
+    // glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
+    // int width = w;
+    // glfwSetCharCallback(window, (GLFWcharfun)special);
+    // glfwSetFramebufferSizeCallback(window, reshape);
+    // glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButtonGLUT);
+    // glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
+    // glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
+    // glutKeyboardFunc((GLUTkeyboardfun)TwEventKeyboardGLUT);
+    // glutSpecialFunc(special);
+    // TwGLUTModifiersFunc(glutGetModifiers);
+    // glutMainLoop();
+
+    if (!glfwInit())
+    {
+        glfwTerminate();
+        std::exit(EXIT_FAILURE);
+    }
+
+    positionX = 1280 - 200;
+
+    glfwSetErrorCallback(errorCallback);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        std::exit(EXIT_FAILURE);
+    }
+    glfwMakeContextCurrent(window);
+
     TwInit(TW_OPENGL, NULL);
-    TwWindowSize(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
-    glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButtonGLUT);
-    glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
-    glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
-    glutKeyboardFunc((GLUTkeyboardfun)TwEventKeyboardGLUT);
-    glutSpecialFunc(special);
-    TwGLUTModifiersFunc(glutGetModifiers);
+    TwWindowSize(1280, 720);
+
+    glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun)TwEventMouseButtonGLFW);
+    glfwSetCursorPosCallback(window, (GLFWcursorposfun)TwEventMousePosGLFW);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetWindowSizeCallback(window, reshape);
     defineUI();
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_POINT_SMOOTH);
     std::thread soundThread(music);
-    glutMainLoop();
+    while (!glfwWindowShouldClose(window))
+    {
+        render(window);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        swarm.swarm();
+        playMusic();
+    }
     soundThread.join();
+    TwTerminate();
+    glfwTerminate();
 
     return 0;
 }
