@@ -122,6 +122,16 @@ void Swarm::setMaxForce(float value)
     this->maxForce = value;
 }
 
+int Swarm::getSwarmMode()
+{
+    return this->swarmMode;
+}
+
+void Swarm::setSwarmMode(int value)
+{
+    this->swarmMode = value;
+}
+
 Triplet Swarm::getAveragePosition()
 {
     return this->averagePosition;

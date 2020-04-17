@@ -218,6 +218,18 @@ void TW_CALL getMaxForce(void *value, void *clientData)
     *(float *)value = swarm.getMaxForce();
 }
 
+// * Swarm Mode callbacks
+
+void TW_CALL setSwarmMode(const void *value, void *clientData)
+{
+    swarm.setSwarmMode(*(const float *)value);
+}
+
+void TW_CALL getSwarmMode(void *value, void *clientData)
+{
+    *(float *)value = swarm.getSwarmMode();
+}
+
 /**
  * Define the UI elements
  * todo refactor to own class?
@@ -229,7 +241,7 @@ void defineUI()
     // global ui properties
     TwDefine("GLOBAL help='The Free Sound of Self-Organisation' fontsize=1 fontresizable=false");
 
-    // left sidebar
+    // upper sidebar (swarm properties)
     upperBar = TwNewBar("Swarm Properties");
     TwDefine("'Swarm Properties' position='0 0' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
     // control radiuses
@@ -245,7 +257,7 @@ void defineUI()
     // control theta manually/check value
     TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
 
-    // right sidebar
+    // lower sidebar (musical properties)
     lowerBar = TwNewBar("Musical Properties");
     TwDefine("'Musical Properties' position='0 150' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
     // control chance of note being played
@@ -267,7 +279,7 @@ void defineUI()
         {AVERAGE, "Average"},
     };
     TwType swarmType = TwDefineEnum("Mapping", swarmMode, 2);
-    TwAddVarRW(lowerBar, "Mapping", swarmType, &swarm.swarmMode, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
+    TwAddVarCB(lowerBar, "Mapping", swarmType, setSwarmMode, getSwarmMode, &swarm, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
 
     TwEnumVal pitchMode[] =
     {

@@ -26,11 +26,8 @@ private:
     float blindAngle;
     float speed;
     float maxForce;
-public:
-    // ! for UI to work
-    // todo change UI so this can become private
     int swarmMode;
-
+public:
     Swarm();
 
     int getSize();
@@ -51,6 +48,9 @@ public:
     void setBlindAngle(float value);
     void setSpeed(float value);
     void setMaxForce(float value);
+
+    int getSwarmMode();
+    void setSwarmMode(int value);
 
     Triplet getAveragePosition();
 
