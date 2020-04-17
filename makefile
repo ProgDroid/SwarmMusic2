@@ -11,7 +11,7 @@ OBJECTS = $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CXXFLAGS = -std=c++14 -O3 -fomit-frame-pointer -march=native -m64 -Wall -pipe -DFX -DXMESA -D__LINUX_ALSA__ -D__LITTLE_ENDIAN__
 # LIB = -lGL -lGLU -lglut -lX11 -lm -lAntTweakBar -lrt -lm -lasound -L lib -L rtmidi -pthread -lportaudio -lrtmidi
 
-LIB = -lGL -lGLU -lglut -lX11 -lm -lAntTweakBar -lasound -L lib -pthread -lstk
+LIB = -lGL -lGLU -lglut -lX11 -lm -lAntTweakBar -lasound -L lib -pthread -lstk -lglfw3 $(shell pkg-config --static --libs x11 xrandr xi xxf86vm glfw3)
 
 # INC = -I include -I AntTweakBar -I portAudio -I rtmidi
 
