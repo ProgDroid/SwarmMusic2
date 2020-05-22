@@ -8,9 +8,10 @@
 #ifndef AGENT_H_
 #define AGENT_H_
 
+#include <vector>
+
 #include <Attractor.h>
 #include <Triplet.h>
-#include <vector>
 
 const float CUBE_HALF_SIZE = 400.0;
 const float BLUE_R         = 0.03137254901;

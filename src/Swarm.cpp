@@ -5,12 +5,13 @@
  * @author Fernando Ferreira
  */
 
+#include <random>
+#include <vector>
+
 #include <Agent.h>
 #include <Attractor.h>
-#include <random>
 #include <Swarm.h>
 #include <Triplet.h>
-#include <vector>
 
 const int FREEFORM       = 0;
 const int AVERAGE        = 1;

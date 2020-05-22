@@ -5,12 +5,15 @@
  * @author Fernando Ferreira
  */
 
-#include <Attractor.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <cmath>
-#include <GL/glut.h>
 #include <random>
-#include <Triplet.h>
 #include <vector>
+
+#include <Attractor.h>
+#include <Triplet.h>
 
 const float CUBE_HALF_SIZE = 400.0;
 const float MAUVE_R        = 0.75686274509;
@@ -82,9 +85,9 @@ Triplet Attractor::getPosition()
  */
 void Attractor::draw()
 {
-    glColor4f(colour.getX(), colour.getY(), colour.getZ(), 1.0);
-    glPushMatrix();
-    glTranslatef(position.getX(), position.getY(), position.getZ());
-    glutWireSphere(5, 10, 10);
-    glPopMatrix();
+    // glColor4f(colour.getX(), colour.getY(), colour.getZ(), 1.0);
+    // glPushMatrix();
+    // glTranslatef(position.getX(), position.getY(), position.getZ());
+    // // glutWireSphere(5, 10, 10);
+    // glPopMatrix();
 }
