@@ -67,6 +67,14 @@ const int BLUES_SIZE       = 6;
 const int RANDOM           = 0;
 const int AVERAGE          = 1;
 const int LENGTH_FACTOR    = 250;
+
+static float repulsionRadius   = 20.0;
+static float orientationRadius = 50.0;
+static float attractionRadius  = 110.0;
+static float blindAngle        = 10;
+static float speed             = 1.5;
+static float maxForce          = 0.7;
+
 float theta                = 0.0;
 bool  canExit              = false;
 int   style                = JAZZ;
@@ -74,6 +82,7 @@ int   GUIpitch             = 72;
 int   pitchMax             = 96;
 int   GUIscale             = 0;
 bool  mute                 = false;
+
 Swarm swarm;
 long pitch;
 float velocity;
@@ -168,29 +177,53 @@ float mainRand()
 //     }
 // }
 
+void slider(nk_context *context, const char *label, float min, float max, float *value, float step) {
+    nk_layout_row_begin(context, NK_DYNAMIC, 15, 2);
+    {
+        nk_layout_row_push(context, 0.40f);
+        nk_label(context, label, NK_TEXT_LEFT);
+        nk_layout_row_push(context, 0.60f);
+        nk_slider_float(context, min, value, max, step);
+    }
+    nk_layout_row_end(context);
+}
+
 /**
- * Define the UI elements
- * todo refactor to own class?
+ * Draw the UI elements
  *
  * @return void
  */
-// void defineUI()
-// {
-//     // global ui properties
-//     TwDefine("GLOBAL help='The Free Sound of Self-Organisation' fontsize=1 fontresizable=false");
+void drawUI(nk_glfw *glfw, nk_context *context) {
+    if (nk_begin(context,
+                    "Swarm Properties",
+                    nk_rect(0, 0, 255, 155),
+                    NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
+            )
+        ) {
+        // repulsion radius
+        slider(context, "Repulsion:", 10.0, 40.0, &repulsionRadius, 1.0);
+
+        // orientation radius
+        slider(context, "Orientation:", 41.0, 70.0, &orientationRadius, 1.0);
+
+        // attraction radius
+        slider(context, "Attraction:", 71.0, 150.0, &attractionRadius, 1.0);
+
+        // blind angle
+        slider(context, "Blind Angle:", 0.0, 45.0, &blindAngle, 1.0);
+
+        // speed
+        slider(context, "Speed:", 0.5, 3.5, &speed, 0.1);
+
+        // maximum force
+        slider(context, "Force:", 0.1, 2.0, &maxForce, 0.1);
+    }
+    nk_end(context);
+}
 
 //     // upper sidebar (swarm properties)
 //     upperBar = TwNewBar("Swarm Properties");
 //     TwDefine("'Swarm Properties' position='0 0' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
-//     // control radiuses
-//     TwAddVarCB(upperBar, "Repulsion Radius", TW_TYPE_FLOAT, setRepulsion, getRepulsion, &swarm, "min=10 max=40 step=1 keyIncr=r keyDecr=R help='Set repulsion radius.'");
-//     TwAddVarCB(upperBar, "Orientation Radius", TW_TYPE_FLOAT, setOrientation, getOrientation, &swarm, "min=41 max=70 step=1 keyIncr=o keyDecr=O help='Set orientation radius.'");
-//     TwAddVarCB(upperBar, "Attraction Radius", TW_TYPE_FLOAT, setAttraction, getAttraction, &swarm, "min=71 max=150 step=1 keyIncr=a keyDecr=A help='Set repulsion radius.'");
-
-//     // control blind angle, speed and maximum force
-//     TwAddVarCB(upperBar, "Blind angle", TW_TYPE_FLOAT, setBlindAngle, getBlindAngle, &swarm, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
-//     TwAddVarCB(upperBar, "Speed", TW_TYPE_FLOAT, setSpeed, getSpeed, &swarm, "min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
-//     TwAddVarCB(upperBar, "Maximum Force", TW_TYPE_FLOAT, setMaxForce, getMaxForce, &swarm,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
 
 //     // control theta manually/check value
 //     TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
@@ -630,19 +663,14 @@ int main(int argc, char *argv[])
 	nk_glfw3_font_stash_begin(&glfw, &atlas);
 	nk_glfw3_font_stash_end(&glfw);
 
+// TODO style
+    // context->style.slider.normal = nk_style_item_color(nk_rgba(0, 0, 255, 255));
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
 		nk_glfw3_new_frame(&glfw); 
-		if (nk_begin(context,
-                    "Nuklear Window",
-                    nk_rect(0, 0, 500, 500),
-                    NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE
-                )
-            ) {
-            // do stuff
-		}
-        nk_end(context);
+        drawUI(&glfw, context);
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
