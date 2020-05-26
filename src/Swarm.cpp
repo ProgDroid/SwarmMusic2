@@ -164,7 +164,7 @@ void Swarm::resetAttractors()
 }
 
 
-void Swarm::addAttractor(long pitch, int tone = -1)
+void Swarm::addAttractor(int pitch, int tone = -1)
 {
     Attractor attractor(pitch, tone);
     attractors.push_back(attractor);

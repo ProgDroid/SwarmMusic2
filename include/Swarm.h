@@ -55,7 +55,7 @@ public:
     Triplet getAveragePosition();
 
     void addAgents();
-    void addAttractor(long pitch, int tone);
+    void addAttractor(int pitch, int tone);
 
     void resetAll();
     void resetAttractors();

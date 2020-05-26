@@ -18,7 +18,7 @@ INC = -I include -I ext
 
 all: glad bin/SwarmMusic
 
-$(TARGET): $(OBJECTS) stk-4.6.0/src/Release/*.o
+$(TARGET): $(OBJECTS) stk-4.6.0/src/Release/Plucked.o stk-4.6.0/src/Release/RtAudio.o stk-4.6.0/src/Release/Skini.o
 	@echo "Linking objects......"
 	g++ -Iinclude/ -Iext/ -c -o $(BUILDDIR)/glad.o $(SRCDIR)/glad.c -lglfw -ldl
 	@echo "$(CXX) $^ -o $(TARGET) $(LIB)"; $(CXX) $^ -o $(TARGET) $(LIB)

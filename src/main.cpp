@@ -9,9 +9,8 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include <random>
-#include <stdio.h>
 #include <thread>
 
 #include <Agent.h>
@@ -51,43 +50,43 @@ const float CENTRAL_C      = 261.63;
 const float CUBE_SIZE_HALF = 400.0;
 const float OLIVEBLACK     = 0.23529411764;
 const float PI             = 3.14159265;
-const int PUNK             = 100;
-const int METAL            = 80;
-const int JAZZ             = 60;
-const int BLUES            = 40;
-const int DOOM             = 20;
+const int DOOM             = 0;
+const int JAZZ             = 1;
+const int POP              = 2;
+const int METAL            = 3;
+const int PUNK             = 4;
 const int MAJOR            = 0;
 const int MINOR            = 1;
 const int PENTATONIC       = 2;
-const int BLUES_SCALE      = 3;
-const int MAJOR_SIZE       = 7;
-const int MINOR_SIZE       = 7;
+const int BLUES            = 3;
 const int PENTATONIC_SIZE  = 5;
 const int BLUES_SIZE       = 6;
+const int MAJOR_SIZE       = 7;
+const int MINOR_SIZE       = 7;
 const int RANDOM           = 0;
 const int AVERAGE          = 1;
+const int C_MIDI_PITCH     = 72;
 const int LENGTH_FACTOR    = 250;
 
 static float repulsionRadius   = 20.0;
 static float orientationRadius = 50.0;
 static float attractionRadius  = 110.0;
 static float blindAngle        = 10;
-static float speed             = 1.5;
 static float maxForce          = 0.7;
+static float speed             = 1.5;
+static int   scale             = 0;
+static int   style             = POP;
 
-float theta                = 0.0;
-bool  canExit              = false;
-int   style                = JAZZ;
-int   GUIpitch             = 72;
-int   pitchMax             = 96;
-int   GUIscale             = 0;
-bool  mute                 = false;
+static unsigned int GUIpitch = 0;
 
+bool  canExit  = false;
+bool  mute     = false;
+float theta    = 0.0;
+
+float noteLength, velocity;
+int   positionX;
+long  pitch;
 Swarm swarm;
-long pitch;
-float velocity;
-float noteLength;
-int positionX;
 
 /**
  * Random number generator
@@ -101,83 +100,81 @@ float mainRand()
     return (float) distribution(generator);
 }
 
-// void TW_CALL addAttr(void *)
-// {
-//     swarm.addAttractor(GUIpitch, -1);
-// }
+void makeScale(int givenPitch) {
+    swarm.resetAttractors();
 
-// void TW_CALL muteSound(void *)
-// {
-//     mute = !mute;
-// }
+    int root      = givenPitch;
+    int scaleType = scale;
 
-// void TW_CALL makeScale(void *)
-// {
-//     swarm.resetAttractors();
+    // normalise root to make 2 octave scale
+    if (root >= 84)
+    {
+        root -= 12;
+    }
 
-//     int root      = GUIpitch;
-//     int scaleType = GUIscale;
+    std::vector<int> intervals;
 
-//     // normalise root to make 2 octave scale
-//     if (root >= 84)
-//     {
-//         root -= 12;
-//     }
+    // todo scales as objects?
+    if (scaleType == MAJOR)
+    {
+        intervals.reserve(MAJOR_SIZE);
+        intervals.push_back(2);
+        intervals.push_back(2);
+        intervals.push_back(1);
+        intervals.push_back(2);
+        intervals.push_back(2);
+        intervals.push_back(2);
+        intervals.push_back(1);
+    }
+    else if (scaleType == MINOR)
+    {
+        intervals.reserve(MINOR_SIZE);
+        intervals.push_back(2);
+        intervals.push_back(1);
+        intervals.push_back(2);
+        intervals.push_back(2);
+        intervals.push_back(1);
+        intervals.push_back(2);
+        intervals.push_back(2);
+    }
+    else if (scaleType == PENTATONIC)
+    {
+        intervals.reserve(PENTATONIC_SIZE);
+        intervals.push_back(3);
+        intervals.push_back(2);
+        intervals.push_back(2);
+        intervals.push_back(3);
+        intervals.push_back(2);
+    }
+    else if (scaleType == BLUES)
+    {
+        intervals.reserve(BLUES_SIZE);
+        intervals.push_back(3);
+        intervals.push_back(2);
+        intervals.push_back(1);
+        intervals.push_back(1);
+        intervals.push_back(3);
+        intervals.push_back(2);
+    }
 
-//     std::vector<int> intervals;
-
-//     // todo scales as objects?
-//     if (scaleType == MAJOR)
-//     {
-//         intervals.reserve(MAJOR_SIZE);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//         intervals.push_back(1);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//         intervals.push_back(1);
-//     }
-//     else if (scaleType == MINOR)
-//     {
-//         intervals.reserve(MINOR_SIZE);
-//         intervals.push_back(2);
-//         intervals.push_back(1);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//         intervals.push_back(1);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//     }
-//     else if (scaleType == PENTATONIC)
-//     {
-//         intervals.reserve(PENTATONIC_SIZE);
-//         intervals.push_back(3);
-//         intervals.push_back(2);
-//         intervals.push_back(2);
-//         intervals.push_back(3);
-//         intervals.push_back(2);
-//     }
-//     else if (scaleType == BLUES)
-//     {
-//         intervals.reserve(BLUES_SIZE);
-//         intervals.push_back(3);
-//         intervals.push_back(2);
-//         intervals.push_back(1);
-//         intervals.push_back(1);
-//         intervals.push_back(3);
-//         intervals.push_back(2);
-//     }
-
-//     // 2 iterations over the intervals to make 2 octaves scale
-//     for (int i = 0, size = intervals.size(); i < size * 2; ++i)
-//     {
-//         int index = i % size;
-//         swarm.addAttractor(root + intervals[index], index);
-//     }
-// }
+    // 2 iterations over the intervals to make 2 octaves scale
+    for (int i = 0, size = intervals.size(); i < size * 2; ++i)
+    {
+        int index = i % size;
+        swarm.addAttractor(root + intervals[index], index);
+    }
+}
 
 void slider(nk_context *context, const char *label, float min, float max, float *value, float step) {
+    // colour bar based on how filled it is
+    float ratio = (*value - min) / (max - min);
+
+    int r = ratio * 8 + 38;
+    int g = ratio * 126 + 38;
+    int b = ratio * 139 + 38;
+
+    context->style.slider.bar_filled = nk_rgb(r, g, b);
+
     nk_layout_row_begin(context, NK_DYNAMIC, 15, 2);
     {
         nk_layout_row_push(context, 0.40f);
@@ -201,6 +198,8 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
                     NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
             )
         ) {
+        context->style.slider.cursor_size = nk_vec2(14, 14);
+
         // repulsion radius
         slider(context, "Repulsion:", 10.0, 40.0, &repulsionRadius, 1.0);
 
@@ -223,27 +222,6 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
     }
     nk_end(context);
 
-// TODO match with globals
-    enum {DOOM, JAZZ, POP, METAL, PUNK};
-    static int styleMode = POP;
-
-    enum {RANDOM, AVERAGE};
-    static int swarmMode = RANDOM;
-
-    std::vector<const char *> pitches = {
-            "C4", "C#4", "D4", "D#4",
-            "E4", "F4", "F#4", "G4",
-            "G#4", "A4", "A#4", "B4",
-            "C5", "C#5", "D5", "D#5",
-            "E5", "F5", "F#5", "G5",
-            "G#5", "A5", "A#5", "B5",
-            "C6"
-    };
-    static unsigned int pitch = 0; // selected pitch by default (C4)
-
-    enum {MAJOR, MINOR, PENTATONIC, BLUES};
-    static int scale = MAJOR;
-
     // to control the musical properties
     if (nk_begin(context,
                     "Musical Properties",
@@ -255,32 +233,43 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
         nk_layout_row_dynamic(context, 15, 1);
         nk_label(context, "Style:", NK_TEXT_LEFT);
         nk_layout_row_dynamic(context, 15, 5);
-        if (nk_option_label(context, "DOOM", styleMode == DOOM)) styleMode = DOOM;
-        if (nk_option_label(context, "Jazz", styleMode == JAZZ)) styleMode = JAZZ;
-        if (nk_option_label(context, "Pop", styleMode == POP)) styleMode = POP;
-        if (nk_option_label(context, "Metal", styleMode == METAL)) styleMode = METAL;
-        if (nk_option_label(context, "Punk", styleMode == PUNK)) styleMode = PUNK;
+        if (nk_option_label(context, "DOOM",  style == DOOM))  style = DOOM;
+        if (nk_option_label(context, "Jazz",  style == JAZZ))  style = JAZZ;
+        if (nk_option_label(context, "Pop",   style == POP))   style = POP;
+        if (nk_option_label(context, "Metal", style == METAL)) style = METAL;
+        if (nk_option_label(context, "Punk",  style == PUNK))  style = PUNK;
 
         // swarm mode picker
         nk_layout_row_dynamic(context, 15, 1);
         nk_label(context, "Swarm Mode:", NK_TEXT_LEFT);
         nk_layout_row_dynamic(context, 15, 2);
-        if (nk_option_label(context, "Random", swarmMode == RANDOM)) swarmMode = RANDOM;
-        if (nk_option_label(context, "Average", swarmMode == AVERAGE)) swarmMode = AVERAGE;
+        if (nk_option_label(context, "Random",  swarm.getSwarmMode() == RANDOM))  swarm.setSwarmMode(RANDOM);
+        if (nk_option_label(context, "Average", swarm.getSwarmMode() == AVERAGE)) swarm.setSwarmMode(AVERAGE);
+
+        // pitch selector
+        std::vector<const char *> pitches = {
+            "C4", "C#4", "D4", "D#4",
+            "E4", "F4", "F#4", "G4",
+            "G#4", "A4", "A#4", "B4",
+            "C5", "C#5", "D5", "D#5",
+            "E5", "F5", "F#5", "G5",
+            "G#5", "A5", "A#5", "B5",
+            "C6"
+        };
 
         nk_layout_row_dynamic(context, 15, 1);
         nk_label(context, "Selected Pitch:", NK_TEXT_LEFT);
-        if (nk_combo_begin_label(context, pitches[pitch], nk_vec2(nk_widget_width(context), 197))) {
+        if (nk_combo_begin_label(context, pitches[GUIpitch], nk_vec2(nk_widget_width(context), 197))) {
             nk_layout_row_dynamic(context, 15, 1);
             for (unsigned int i = 0; i < pitches.size(); ++i) {
                 // highlight pitch in use
-                context->style.contextual_button.normal = i == pitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
-                context->style.contextual_button.text_normal = i == pitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
-                context->style.contextual_button.hover = i == pitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
-                context->style.contextual_button.text_hover = i == pitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+                context->style.contextual_button.normal      = i == GUIpitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45));
+                context->style.contextual_button.text_normal = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+                context->style.contextual_button.hover       = i == GUIpitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+                context->style.contextual_button.text_hover  = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
 
                 if (nk_combo_item_label(context, pitches[i], NK_TEXT_LEFT)) {
-                    pitch = i;
+                    GUIpitch = i;
                 }
             }
             nk_combo_end(context);
@@ -290,22 +279,38 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
         nk_layout_row_dynamic(context, 15, 1);
         nk_label(context, "Scale:", NK_TEXT_LEFT);
         nk_layout_row_dynamic(context, 15, 4);
-        if (nk_option_label(context, "Major", scale == MAJOR)) scale = MAJOR;
-        if (nk_option_label(context, "minor", scale == MINOR)) scale = MINOR;
+        if (nk_option_label(context, "Major",      scale == MAJOR))      scale = MAJOR;
+        if (nk_option_label(context, "minor",      scale == MINOR))      scale = MINOR;
         if (nk_option_label(context, "Pentatonic", scale == PENTATONIC)) scale = PENTATONIC;
-        if (nk_option_label(context, "Blues", scale == BLUES)) scale = BLUES;
+        if (nk_option_label(context, "Blues",      scale == BLUES))      scale = BLUES;
 
+        // reset style for following buttons
+        context->style.button.normal      = nk_style_item_color(nk_rgb(50, 50, 50));
+        context->style.button.text_normal = nk_rgb(175, 175, 175);
+        context->style.button.hover       = nk_style_item_color(nk_rgb(40, 40, 40));
+        context->style.button.text_hover  = nk_rgb(175, 175, 175);
+
+        // add attractor
         nk_layout_row_dynamic(context, 20, 2);
         if (nk_button_label(context, "Add Attractor")) {
-            // TODO add attractor callback
+            swarm.addAttractor((int) GUIpitch + C_MIDI_PITCH, -1);
         }
+
+        // add scale
         if (nk_button_label(context, "Add Scale")) {
-            // TODO add scale callback
+            makeScale((int) GUIpitch + C_MIDI_PITCH);
         }
+
+        // mute
         nk_layout_row_dynamic(context, 25, 1);
-        // TODO if muted, colour and change text to unmute
-        if (nk_button_label(context, "Mute")) {
-            // mute
+        // style button if muted
+        context->style.button.normal      = mute ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
+        context->style.button.text_normal = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+        context->style.button.hover       = mute ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+        context->style.button.text_hover  = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+        if (nk_button_label(context, mute ? "Unmute" : "Mute")) {
+            mute = !mute;
         }
     }
     nk_end(context);
@@ -684,9 +689,6 @@ int main(int argc, char *argv[])
 	struct nk_font_atlas* atlas;
 	nk_glfw3_font_stash_begin(&glfw, &atlas);
 	nk_glfw3_font_stash_end(&glfw);
-
-// TODO style
-    // context->style.slider.normal = nk_style_item_color(nk_rgba(0, 0, 255, 255));
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();

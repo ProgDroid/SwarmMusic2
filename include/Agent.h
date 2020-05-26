@@ -14,10 +14,10 @@
 #include <Triplet.h>
 
 const float CUBE_HALF_SIZE = 400.0;
-const float BLUE_R         = 0.03137254901;
+const float BLUE_R         = 0.03137254901; // 8, 126, 139
 const float BLUE_G         = 0.49411764705;
 const float BLUE_B         = 0.54509803921;
-const float RED_R          = 1.0;
+const float RED_R          = 1.0;           // 255, 90, 95
 const float RED_G          = 0.35294117647;
 const float RED_B          = 0.3725490196;
 const float DEFAULT_WHITE  = 0.96078431372;

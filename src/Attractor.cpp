@@ -43,7 +43,7 @@ float attractRand()
     return (float) distribution(generator);
 }
 
-Attractor::Attractor(long pitch, int givenTone)
+Attractor::Attractor(int pitch, int givenTone)
 {
     tone = givenTone;
     mode = SCALES;

@@ -20,7 +20,7 @@ private:
     int mode;
 
 public:
-    Attractor(long pitch, int givenTone);
+    Attractor(int pitch, int givenTone);
 
     Triplet getPosition();
 
