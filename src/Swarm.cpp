@@ -5,12 +5,13 @@
  * @author Fernando Ferreira
  */
 
+#include <random>
+#include <vector>
+
 #include <Agent.h>
 #include <Attractor.h>
-#include <random>
 #include <Swarm.h>
 #include <Triplet.h>
-#include <vector>
 
 const int FREEFORM       = 0;
 const int AVERAGE        = 1;
@@ -163,7 +164,7 @@ void Swarm::resetAttractors()
 }
 
 
-void Swarm::addAttractor(long pitch, int tone = -1)
+void Swarm::addAttractor(int pitch, int tone = -1)
 {
     Attractor attractor(pitch, tone);
     attractors.push_back(attractor);

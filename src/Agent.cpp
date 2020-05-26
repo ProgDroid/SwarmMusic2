@@ -5,14 +5,17 @@
  * @author Fernando Ferreira
  */
 
-#include <Agent.h>
-#include <Attractor.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <cmath>
-#include <GL/glut.h>
 #include <iostream>
 #include <random>
-#include <Triplet.h>
 #include <vector>
+
+#include <Agent.h>
+#include <Attractor.h>
+#include <Triplet.h>
 
 const float TO_DEGREES   = 57.295779524;
 const float MIN_DISTANCE = 100000000;
@@ -282,18 +285,18 @@ Triplet Agent::bounding()
  */
 void Agent::draw()
 {
-    glColor4f(colour.getX(), colour.getY(), colour.getZ(), 1.0);
-    glPushMatrix();
-    glTranslatef(position.getX(), position.getY(), position.getZ());
-    Triplet tempDirection = Triplet(direction.getX(), direction.getY(), direction.getZ());
-    tempDirection.scalarMul(TO_DEGREES);
-    glRotatef(tempDirection.getX(), 1.0, 0.0, 0.0);
-    glRotatef(tempDirection.getY(), 0.0, cos(direction.getX()), -sin(direction.getX()));
-    glRotatef(tempDirection.getZ(), 0.0, 0.0, 1.0);
-    // scaling for looks
-    glScalef(1.0, 0.25, 0.25);
-    glutSolidCone(5.5, 5.5, 5, 1);
-    glPopMatrix();
+    // glColor4f(colour.getX(), colour.getY(), colour.getZ(), 1.0);
+    // glPushMatrix();
+    // glTranslatef(position.getX(), position.getY(), position.getZ());
+    // Triplet tempDirection = Triplet(direction.getX(), direction.getY(), direction.getZ());
+    // tempDirection.scalarMul(TO_DEGREES);
+    // glRotatef(tempDirection.getX(), 1.0, 0.0, 0.0);
+    // glRotatef(tempDirection.getY(), 0.0, cos(direction.getX()), -sin(direction.getX()));
+    // glRotatef(tempDirection.getZ(), 0.0, 0.0, 1.0);
+    // // scaling for looks
+    // glScalef(1.0, 0.25, 0.25);
+    // glutSolidCone(5.5, 5.5, 5, 1);
+    // glPopMatrix();
 }
 
 /**

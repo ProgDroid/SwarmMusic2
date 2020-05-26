@@ -5,20 +5,35 @@
  * @author Fernando Ferreira
  */
 
-#include <Agent.h>
-#include <algorithm>
-#include <AntTweakBar.h>
-#include <GL/freeglut.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <math.h>
+
+#include <algorithm>
+#include <cmath>
 #include <random>
-#include <stdio.h>
+#include <thread>
+
+#include <Agent.h>
+#include <Swarm.h>
+#include <Triplet.h>
+
 #include <stk/Plucked.h>
 #include <stk/RtAudio.h>
 #include <stk/Skini.h>
-#include <Swarm.h>
-#include <thread>
-#include <Triplet.h>
+
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#define NK_GLFW_GL3_IMPLEMENTATION
+#include "nuklear.h"
+#include "nuklear_glfw_gl3.h"
 
 struct TickData
 {
@@ -35,36 +50,43 @@ const float CENTRAL_C      = 261.63;
 const float CUBE_SIZE_HALF = 400.0;
 const float OLIVEBLACK     = 0.23529411764;
 const float PI             = 3.14159265;
-const int FIREANDFLAMES    = 100;
-const int METAL            = 80;
-const int JAZZ             = 60;
-const int BLUES            = 40;
-const int DOOM             = 20;
+const int DOOM             = 0;
+const int JAZZ             = 1;
+const int POP              = 2;
+const int METAL            = 3;
+const int PUNK             = 4;
 const int MAJOR            = 0;
 const int MINOR            = 1;
 const int PENTATONIC       = 2;
-const int BLUES_SCALE      = 3;
-const int MAJOR_SIZE       = 7;
-const int MINOR_SIZE       = 7;
+const int BLUES            = 3;
 const int PENTATONIC_SIZE  = 5;
 const int BLUES_SIZE       = 6;
+const int MAJOR_SIZE       = 7;
+const int MINOR_SIZE       = 7;
 const int RANDOM           = 0;
 const int AVERAGE          = 1;
+const int C_MIDI_PITCH     = 72;
 const int LENGTH_FACTOR    = 250;
-float theta                = 0.0;
-bool  canExit              = false;
-int   style                = JAZZ;
-int   GUIpitch             = 72;
-int   pitchMax             = 96;
-int   GUIscale             = 0;
-bool  mute                 = false;
+
+static float repulsionRadius   = 20.0;
+static float orientationRadius = 50.0;
+static float attractionRadius  = 110.0;
+static float blindAngle        = 10;
+static float maxForce          = 0.7;
+static float speed             = 1.5;
+static int   scale             = 0;
+static int   style             = POP;
+
+static unsigned int GUIpitch = 0;
+
+bool  canExit  = false;
+bool  mute     = false;
+float theta    = 0.0;
+
+float noteLength, velocity;
+int   positionX;
+long  pitch;
 Swarm swarm;
-TwBar *upperBar;
-TwBar *lowerBar;
-long pitch;
-float velocity;
-float noteLength;
-int positionX;
 
 /**
  * Random number generator
@@ -78,22 +100,11 @@ float mainRand()
     return (float) distribution(generator);
 }
 
-void TW_CALL addAttr(void *)
-{
-    swarm.addAttractor(GUIpitch, -1);
-}
-
-void TW_CALL muteSound(void *)
-{
-    mute = !mute;
-}
-
-void TW_CALL makeScale(void *)
-{
+void makeScale(int givenPitch) {
     swarm.resetAttractors();
 
-    int root      = GUIpitch;
-    int scaleType = GUIscale;
+    int root      = givenPitch;
+    int scaleType = scale;
 
     // normalise root to make 2 octave scale
     if (root >= 84)
@@ -154,172 +165,170 @@ void TW_CALL makeScale(void *)
     }
 }
 
-// * Radius callbacks
+void slider(nk_context *context, const char *label, float min, float max, float *value, float step) {
+    // colour bar based on how filled it is
+    float ratio = (*value - min) / (max - min);
 
-void TW_CALL setRepulsion(const void *value, void *clientData)
-{
-    swarm.setRepulsionRadius(*(const float *)value);
-}
+    int r = ratio * 8 + 38;
+    int g = ratio * 126 + 38;
+    int b = ratio * 139 + 38;
 
-void TW_CALL setOrientation(const void *value, void *clientData)
-{
-    swarm.setOrientationRadius(*(const float *)value);
-}
+    context->style.slider.bar_filled = nk_rgb(r, g, b);
 
-void TW_CALL setAttraction(const void *value, void *clientData)
-{
-    swarm.setAttractionRadius(*(const float *)value);
-}
-
-void TW_CALL getRepulsion(void *value, void *clientData)
-{
-    *(float *)value = swarm.getRepulsionRadius();
-}
-
-void TW_CALL getOrientation(void *value, void *clientData)
-{
-    *(float *)value = swarm.getOrientationRadius();
-}
-
-void TW_CALL getAttraction(void *value, void *clientData)
-{
-    *(float *)value = swarm.getAttractionRadius();
-}
-
-// * Blind angle, speed and maximum force callbacks
-
-void TW_CALL setBlindAngle(const void *value, void *clientData)
-{
-    swarm.setBlindAngle(*(const float *)value);
-}
-
-void TW_CALL setSpeed(const void *value, void *clientData)
-{
-    swarm.setSpeed(*(const float *)value);
-}
-
-void TW_CALL setMaxForce(const void *value, void *clientData)
-{
-    swarm.setMaxForce(*(const float *)value);
-}
-
-void TW_CALL getBlindAngle(void *value, void *clientData)
-{
-    *(float *)value = swarm.getBlindAngle();
-}
-
-void TW_CALL getSpeed(void *value, void *clientData)
-{
-    *(float *)value = swarm.getSpeed();
-}
-
-void TW_CALL getMaxForce(void *value, void *clientData)
-{
-    *(float *)value = swarm.getMaxForce();
-}
-
-// * Swarm Mode callbacks
-
-void TW_CALL setSwarmMode(const void *value, void *clientData)
-{
-    swarm.setSwarmMode(*(const float *)value);
-}
-
-void TW_CALL getSwarmMode(void *value, void *clientData)
-{
-    *(float *)value = swarm.getSwarmMode();
+    nk_layout_row_begin(context, NK_DYNAMIC, 15, 2);
+    {
+        nk_layout_row_push(context, 0.40f);
+        nk_label(context, label, NK_TEXT_LEFT);
+        nk_layout_row_push(context, 0.60f);
+        nk_slider_float(context, min, value, max, step);
+    }
+    nk_layout_row_end(context);
 }
 
 /**
- * Define the UI elements
- * todo refactor to own class?
+ * Draw the UI elements
  *
  * @return void
  */
-void defineUI()
-{
-    // global ui properties
-    TwDefine("GLOBAL help='The Free Sound of Self-Organisation' fontsize=1 fontresizable=false");
+void drawUI(nk_glfw *glfw, nk_context *context) {
+    // to control the swarm properties
+    if (nk_begin(context,
+                    "Swarm Properties",
+                    nk_rect(0, 0, 285, 155),
+                    NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
+            )
+        ) {
+        context->style.slider.cursor_size = nk_vec2(14, 14);
 
-    // upper sidebar (swarm properties)
-    upperBar = TwNewBar("Swarm Properties");
-    TwDefine("'Swarm Properties' position='0 0' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
-    // control radiuses
-    TwAddVarCB(upperBar, "Repulsion Radius", TW_TYPE_FLOAT, setRepulsion, getRepulsion, &swarm, "min=10 max=40 step=1 keyIncr=r keyDecr=R help='Set repulsion radius.'");
-    TwAddVarCB(upperBar, "Orientation Radius", TW_TYPE_FLOAT, setOrientation, getOrientation, &swarm, "min=41 max=70 step=1 keyIncr=o keyDecr=O help='Set orientation radius.'");
-    TwAddVarCB(upperBar, "Attraction Radius", TW_TYPE_FLOAT, setAttraction, getAttraction, &swarm, "min=71 max=150 step=1 keyIncr=a keyDecr=A help='Set repulsion radius.'");
+        // repulsion radius
+        slider(context, "Repulsion:", 10.0, 40.0, &repulsionRadius, 1.0);
 
-    // control blind angle, speed and maximum force
-    TwAddVarCB(upperBar, "Blind angle", TW_TYPE_FLOAT, setBlindAngle, getBlindAngle, &swarm, "min=0 max=45 step=1 keyIncr=b keyDecr=B help='Set blind angle.'");
-    TwAddVarCB(upperBar, "Speed", TW_TYPE_FLOAT, setSpeed, getSpeed, &swarm, "min=0.5 max=3.5 step=0.1 keyIncr=s keyDecr=S help='Set speed.'");
-    TwAddVarCB(upperBar, "Maximum Force", TW_TYPE_FLOAT, setMaxForce, getMaxForce, &swarm,"min=0.1 max=2.0 step=0.1 keyIncr=f keyDecr=F help='Set maximum force.'");
+        // orientation radius
+        slider(context, "Orientation:", 41.0, 70.0, &orientationRadius, 1.0);
 
-    // control theta manually/check value
-    TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
+        // attraction radius
+        slider(context, "Attraction:", 71.0, 150.0, &attractionRadius, 1.0);
 
-    // lower sidebar (musical properties)
-    lowerBar = TwNewBar("Musical Properties");
-    TwDefine("'Musical Properties' position='0 150' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
-    // control chance of note being played
-    TwEnumVal styleMode[] =
-    {
-        {DOOM, "DOOM"},
-        {BLUES, "Blues"},
-        {JAZZ, "Jazz"},
-        {METAL, "Metal"},
-        {FIREANDFLAMES, "Insane"}
-    };
-    TwType modeType = TwDefineEnum("Style", styleMode, 5);
-    TwAddVarRW(lowerBar, "Style", modeType, &style, "keyIncr=n keyDecr=N help='From a gloomy to non-stop.'");
+        // blind angle
+        slider(context, "Blind Angle:", 0.0, 45.0, &blindAngle, 1.0);
 
-    // control whether to get random coordinates from agents or average of all
-    TwEnumVal swarmMode[] =
-    {
-        {RANDOM, "Random"},
-        {AVERAGE, "Average"},
-    };
-    TwType swarmType = TwDefineEnum("Mapping", swarmMode, 2);
-    TwAddVarCB(lowerBar, "Mapping", swarmType, setSwarmMode, getSwarmMode, &swarm, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
+        // speed
+        slider(context, "Speed:", 0.5, 3.5, &speed, 0.1);
 
-    TwEnumVal pitchMode[] =
-    {
-        {72, "C4"},  {73, "C#4"}, {74, "D4"},  {75, "D#4"},
-        {76, "E4"},  {77, "F4"},  {78, "F#4"}, {79, "G4"},
-        {80, "G#4"}, {81, "A4"},  {82, "A#4"}, {83, "B4"},
-        {84, "C5"},  {85, "C#5"}, {86, "D5"},  {87, "D#5"},
-        {88, "E5"},  {89, "F5"},  {90, "F#5"}, {91, "G5"},
-        {92, "G#5"}, {93, "A5"},  {94, "A#5"}, {95, "B5"},
-        {96, "C6"}
-    };
-    TwType pitchType = TwDefineEnum("Pitches", pitchMode, 25);
+        // maximum force
+        slider(context, "Force:", 0.1, 2.0, &maxForce, 0.1);
 
-    // pick pitch for new attractor
-    TwAddVarRW(lowerBar, "Pitch", pitchType, &GUIpitch, "label='Pitch for attractors or scale' keyIncr='p' keyDecr='P' help='The pitch for attractors to be added.'");
+        // TODO view angle?
+    }
+    nk_end(context);
 
-    // add attractor
-    TwAddButton(lowerBar, "Add Attractor", addAttr, nullptr, "label='Add an attractor' help='Add attractor with pitch from above.'");
+    // to control the musical properties
+    if (nk_begin(context,
+                    "Musical Properties",
+                    nk_rect(glfw->display_width - 285, 0, 285, 245),
+                    NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
+            )
+        ) {
+        // style picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Style:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 5);
+        if (nk_option_label(context, "DOOM",  style == DOOM))  style = DOOM;
+        if (nk_option_label(context, "Jazz",  style == JAZZ))  style = JAZZ;
+        if (nk_option_label(context, "Pop",   style == POP))   style = POP;
+        if (nk_option_label(context, "Metal", style == METAL)) style = METAL;
+        if (nk_option_label(context, "Punk",  style == PUNK))  style = PUNK;
 
-    // pick scale type
-    TwEnumVal scaleMode[] =
-    {
-        {MAJOR, "Major"},
-        {MINOR, "Minor"},
-        {PENTATONIC, "Pentatonic Minor"},
-        {BLUES, "Blues"},
-    };
-    TwType scalesType = TwDefineEnum("Scale Type", scaleMode, 4);
-    TwAddVarRW(lowerBar, "Scale Type", scalesType, &GUIscale, "keyIncr=t \
-             keyDecr=T help='Pick the type of scale to be added with attractors.'");
-    // button to make scale based on pitch
-    TwAddButton(lowerBar, "Add Scale", makeScale, nullptr, "label='Add a scale' \
-              help='Add a scale with the pitch above as root.'");
-    // button to mute/unmute
-    TwAddButton(lowerBar, "Mute On/Off", muteSound, nullptr, "label='Mute On/Off' \
-              help='Mute sound output.'");
+        // swarm mode picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Swarm Mode:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 2);
+        if (nk_option_label(context, "Random",  swarm.getSwarmMode() == RANDOM))  swarm.setSwarmMode(RANDOM);
+        if (nk_option_label(context, "Average", swarm.getSwarmMode() == AVERAGE)) swarm.setSwarmMode(AVERAGE);
+
+        // pitch selector
+        std::vector<const char *> pitches = {
+            "C4", "C#4", "D4", "D#4",
+            "E4", "F4", "F#4", "G4",
+            "G#4", "A4", "A#4", "B4",
+            "C5", "C#5", "D5", "D#5",
+            "E5", "F5", "F#5", "G5",
+            "G#5", "A5", "A#5", "B5",
+            "C6"
+        };
+
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Selected Pitch:", NK_TEXT_LEFT);
+        if (nk_combo_begin_label(context, pitches[GUIpitch], nk_vec2(nk_widget_width(context), 197))) {
+            nk_layout_row_dynamic(context, 15, 1);
+            for (unsigned int i = 0; i < pitches.size(); ++i) {
+                // highlight pitch in use
+                context->style.contextual_button.normal      = i == GUIpitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45));
+                context->style.contextual_button.text_normal = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+                context->style.contextual_button.hover       = i == GUIpitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+                context->style.contextual_button.text_hover  = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+                if (nk_combo_item_label(context, pitches[i], NK_TEXT_LEFT)) {
+                    GUIpitch = i;
+                }
+            }
+            nk_combo_end(context);
+        }
+
+        // scale picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Scale:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 4);
+        if (nk_option_label(context, "Major",      scale == MAJOR))      scale = MAJOR;
+        if (nk_option_label(context, "minor",      scale == MINOR))      scale = MINOR;
+        if (nk_option_label(context, "Pentatonic", scale == PENTATONIC)) scale = PENTATONIC;
+        if (nk_option_label(context, "Blues",      scale == BLUES))      scale = BLUES;
+
+        // reset style for following buttons
+        context->style.button.normal      = nk_style_item_color(nk_rgb(50, 50, 50));
+        context->style.button.text_normal = nk_rgb(175, 175, 175);
+        context->style.button.hover       = nk_style_item_color(nk_rgb(40, 40, 40));
+        context->style.button.text_hover  = nk_rgb(175, 175, 175);
+
+        // add attractor
+        nk_layout_row_dynamic(context, 20, 2);
+        if (nk_button_label(context, "Add Attractor")) {
+            swarm.addAttractor((int) GUIpitch + C_MIDI_PITCH, -1);
+        }
+
+        // add scale
+        if (nk_button_label(context, "Add Scale")) {
+            makeScale((int) GUIpitch + C_MIDI_PITCH);
+        }
+
+        // mute
+        nk_layout_row_dynamic(context, 25, 1);
+        // style button if muted
+        context->style.button.normal      = mute ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
+        context->style.button.text_normal = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+        context->style.button.hover       = mute ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+        context->style.button.text_hover  = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+        if (nk_button_label(context, mute ? "Unmute" : "Mute")) {
+            mute = !mute;
+        }
+    }
+    nk_end(context);
 }
 
 void drawWireCube()
 {
+    // glColor4f(0.0, 0.0, 0.0, 1.0);
+    // // glPushMatrix();
+    // // glMatrixMode(GL_MODELVIEW);
+    // // glLoadIdentity();
+    // glBegin(GL_QUADS);
+    //     glVertex3f(-1.0f, -1.0f, 1.0f);
+    //     glVertex3f(-1.0f, -1.0f, -1.0f);
+    //     glVertex3f(1.0f, -1.0f, -1.0f);
+    //     glVertex3f(1.0f, -1.0f, 1.0f);
+    // glEnd();
+    // glPopMatrix();
     // glColor4f(0.0, 0.0, 0.0, 1.0);
     // glPushMatrix();
     // glutWireCube(800.0);
@@ -328,32 +337,30 @@ void drawWireCube()
 
 void render(GLFWwindow* window)
 {
-    glLoadIdentity();
-    gluLookAt(1250 * sin(theta * (PI / 180)), 500.0, 1250 * cos(theta * (PI / 180)),
-              0.0, -100.0, 0.0,
-              0.0, 1.0, 0.0);
+    // glPushMatrix();
+    // glLoadIdentity();
+    // gluLookAt(1250 * sin(theta * (PI / 180)), 500.0, 1250 * cos(theta * (PI / 180)),
+    //           0.0, -100.0, 0.0,
+    //           0.0, 1.0, 0.0);
+    // glPopMatrix();
 
     glClear(GL_COLOR_BUFFER_BIT);
 
     swarm.drawAgents();
     // drawWireCube();
-    swarm.drawAttractors();
-
-    // draw UI
-    TwDraw();
+    // swarm.drawAttractors();
 }
 
 void reshape(GLFWwindow* window, int width, int height)
 {
-    printf("welele");
-    glClearColor(OLIVEBLACK, OLIVEBLACK, OLIVEBLACK, 1.0);
-    glViewport(0, 0, (GLsizei) width, (GLsizei) height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60, (GLfloat) width / (GLfloat) height, 1.0, 10000.0);
-    glMatrixMode(GL_MODELVIEW);
-    TwWindowSize(width, height);
-    positionX = width - 200;
+    // glClearColor(OLIVEBLACK, OLIVEBLACK, OLIVEBLACK, 1.0);
+    // glViewport(0, 0, (GLsizei) width, (GLsizei) height);
+    // // glMatrixMode(GL_PROJECTION);
+    // // glLoadIdentity();
+    // // gluPerspective(60, (GLfloat) width / (GLfloat) height, 1.0, 10000.0);
+    // // glMatrixMode(GL_MODELVIEW);
+    // TwWindowSize(width, height);
+    // positionX = width - 200;
 }
 
 void idle()
@@ -394,12 +401,12 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         canExit = true;
     } // HOME
 
-    if (key == GLUT_KEY_PAGE_UP && action == GLFW_PRESS)
+    if (key == GLFW_KEY_PAGE_UP && action == GLFW_PRESS)
     {
         swarm.resetAll();
     }
 
-    if (key == GLUT_KEY_PAGE_DOWN && action == GLFW_PRESS)
+    if (key == GLFW_KEY_PAGE_DOWN && action == GLFW_PRESS)
     {
         swarm.resetAttractors();
     }
@@ -435,7 +442,7 @@ int tick(
     {
         lengthFactor = 100;
     }
-    else if (style == FIREANDFLAMES)
+    else if (style == PUNK)
     {
         lengthFactor = 50;
     }
@@ -571,29 +578,14 @@ void timer(int val) {
     playMusic();
 }
 
-void initGraphics()
-{
-    if (!glfwInit())
-    {
-        glfwTerminate();
-        std::exit(EXIT_FAILURE);
-    };
-    // glutInit(&argc, argv);
-    // glutInitWindowSize(1280, 720);
-    // glutInitWindowPosition(100, 100);
-    positionX = 1280 - 200;
-    // glutInitDisplayMode(GLUT_DOUBLE);
-    // glutCreateWindow("Swarm Music");
-    // glutDisplayFunc(display);
-    // glutSpecialFunc(special);
-    // glutReshapeFunc(reshape);
-    // glutIdleFunc(idle);
-    // glutTimerFunc(0, timer, 0);
-}
-
 void errorCallback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
+}
+
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
 }
 
 int main(int argc, char *argv[])
@@ -606,7 +598,8 @@ int main(int argc, char *argv[])
     // int width = w;
     // glfwSetCharCallback(window, (GLFWcharfun)special);
     // glfwSetFramebufferSizeCallback(window, reshape);
-    // glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButtonGLUT);
+    // glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButton    // TwInit(TW_OPENGL, NULL);
+    // TwWindowSize(1280, 720);GLUT);
     // glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
     // glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
     // glutKeyboardFunc((GLUTkeyboardfun)TwEventKeyboardGLUT);
@@ -614,47 +607,101 @@ int main(int argc, char *argv[])
     // TwGLUTModifiersFunc(glutGetModifiers);
     // glutMainLoop();
 
-    if (!glfwInit())
-    {
+    // if (!glfwInit())
+    // {
+    //     glfwTerminate();
+    //     std::exit(EXIT_FAILURE);
+    // }
+
+    // positionX = 1280 - 200;
+
+    // glfwSetErrorCallback(errorCallback);
+    // GLFWwindow* window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
+    // if (!window)
+    // {
+    //     glfwTerminate();
+    //     std::exit(EXIT_FAILURE);
+    // }
+    // glfwMakeContextCurrent(window);
+
+    // glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun)TwEventMouseButtonGLFW);
+    // glfwSetCursorPosCallback(window, (GLFWcursorposfun)TwEventMousePosGLFW);
+    // glfwSetKeyCallback(window, keyCallback);
+    // glfwSetWindowSizeCallback(window, reshape);
+    // defineUI();
+    // glEnable(GL_DEPTH_TEST);
+    // glDepthFunc(GL_LESS);
+    // glEnable(GL_POINT_SMOOTH);
+    // glfwSwapInterval(1);
+    // reshape(window, 1280, 720);
+
+    // std::thread soundThread(music);
+    // while (!glfwWindowShouldClose(window))
+    // {
+    //     render(window);
+    //     glfwSwapBuffers(window);
+    //     glfwPollEvents();
+
+    //     swarm.swarm();
+    //     // playMusic();
+    // }
+    // soundThread.join();
+    // TwTerminate();
+    // glfwTerminate();
+
+    static GLFWwindow *window;
+    int width = 0, height = 0;
+
+    glfwSetErrorCallback(errorCallback);
+
+    if (!glfwInit()) {
         glfwTerminate();
         std::exit(EXIT_FAILURE);
     }
 
-    positionX = 1280 - 200;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    glfwSetErrorCallback(errorCallback);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
-    if (!window)
-    {
+    window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
+    if (window == NULL) {
+        std::cout << "Failed to create window" << std::endl;
         glfwTerminate();
         std::exit(EXIT_FAILURE);
     }
     glfwMakeContextCurrent(window);
+    glfwGetWindowSize(window, &width, &height);
 
-    TwInit(TW_OPENGL, NULL);
-    TwWindowSize(1280, 720);
-
-    glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun)TwEventMouseButtonGLFW);
-    glfwSetCursorPosCallback(window, (GLFWcursorposfun)TwEventMousePosGLFW);
-    glfwSetKeyCallback(window, keyCallback);
-    glfwSetWindowSizeCallback(window, reshape);
-    defineUI();
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glEnable(GL_POINT_SMOOTH);
-    std::thread soundThread(music);
-    while (!glfwWindowShouldClose(window))
-    {
-        render(window);
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-
-        swarm.swarm();
-        playMusic();
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::exit(EXIT_FAILURE);
     }
-    soundThread.join();
-    TwTerminate();
-    glfwTerminate();
+    glViewport(0, 0, width, height);
 
-    return 0;
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
+    // UI
+    struct nk_glfw glfw = {0};
+    struct nk_context* context = nk_glfw3_init(&glfw, window, NK_GLFW3_INSTALL_CALLBACKS);
+	struct nk_font_atlas* atlas;
+	nk_glfw3_font_stash_begin(&glfw, &atlas);
+	nk_glfw3_font_stash_end(&glfw);
+
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+
+		nk_glfw3_new_frame(&glfw); 
+        drawUI(&glfw, context);
+
+		glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		nk_glfw3_render(&glfw, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+
+		glfwSwapBuffers(window);
+	}
+
+	nk_glfw3_shutdown(&glfw);
+	glfwTerminate();
+    std::exit(EXIT_SUCCESS);
 }

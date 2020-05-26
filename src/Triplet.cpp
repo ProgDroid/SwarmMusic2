@@ -6,6 +6,7 @@
  */
 
 #include <cmath>
+
 #include <Triplet.h>
 
 const float TO_DEGREES = 57.295779524;
