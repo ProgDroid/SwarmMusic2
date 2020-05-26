@@ -51,7 +51,7 @@ const float CENTRAL_C      = 261.63;
 const float CUBE_SIZE_HALF = 400.0;
 const float OLIVEBLACK     = 0.23529411764;
 const float PI             = 3.14159265;
-const int FIREANDFLAMES    = 100;
+const int PUNK             = 100;
 const int METAL            = 80;
 const int JAZZ             = 60;
 const int BLUES            = 40;
@@ -194,9 +194,10 @@ void slider(nk_context *context, const char *label, float min, float max, float 
  * @return void
  */
 void drawUI(nk_glfw *glfw, nk_context *context) {
+    // to control the swarm properties
     if (nk_begin(context,
                     "Swarm Properties",
-                    nk_rect(0, 0, 255, 155),
+                    nk_rect(0, 0, 285, 155),
                     NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
             )
         ) {
@@ -217,77 +218,98 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
 
         // maximum force
         slider(context, "Force:", 0.1, 2.0, &maxForce, 0.1);
+
+        // TODO view angle?
+    }
+    nk_end(context);
+
+// TODO match with globals
+    enum {DOOM, JAZZ, POP, METAL, PUNK};
+    static int styleMode = POP;
+
+    enum {RANDOM, AVERAGE};
+    static int swarmMode = RANDOM;
+
+    std::vector<const char *> pitches = {
+            "C4", "C#4", "D4", "D#4",
+            "E4", "F4", "F#4", "G4",
+            "G#4", "A4", "A#4", "B4",
+            "C5", "C#5", "D5", "D#5",
+            "E5", "F5", "F#5", "G5",
+            "G#5", "A5", "A#5", "B5",
+            "C6"
+    };
+    static unsigned int pitch = 0; // selected pitch by default (C4)
+
+    enum {MAJOR, MINOR, PENTATONIC, BLUES};
+    static int scale = MAJOR;
+
+    // to control the musical properties
+    if (nk_begin(context,
+                    "Musical Properties",
+                    nk_rect(glfw->display_width - 285, 0, 285, 245),
+                    NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR
+            )
+        ) {
+        // style picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Style:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 5);
+        if (nk_option_label(context, "DOOM", styleMode == DOOM)) styleMode = DOOM;
+        if (nk_option_label(context, "Jazz", styleMode == JAZZ)) styleMode = JAZZ;
+        if (nk_option_label(context, "Pop", styleMode == POP)) styleMode = POP;
+        if (nk_option_label(context, "Metal", styleMode == METAL)) styleMode = METAL;
+        if (nk_option_label(context, "Punk", styleMode == PUNK)) styleMode = PUNK;
+
+        // swarm mode picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Swarm Mode:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 2);
+        if (nk_option_label(context, "Random", swarmMode == RANDOM)) swarmMode = RANDOM;
+        if (nk_option_label(context, "Average", swarmMode == AVERAGE)) swarmMode = AVERAGE;
+
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Selected Pitch:", NK_TEXT_LEFT);
+        if (nk_combo_begin_label(context, pitches[pitch], nk_vec2(nk_widget_width(context), 197))) {
+            nk_layout_row_dynamic(context, 15, 1);
+            for (unsigned int i = 0; i < pitches.size(); ++i) {
+                // highlight pitch in use
+                context->style.contextual_button.normal = i == pitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
+                context->style.contextual_button.text_normal = i == pitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+                context->style.contextual_button.hover = i == pitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+                context->style.contextual_button.text_hover = i == pitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+                if (nk_combo_item_label(context, pitches[i], NK_TEXT_LEFT)) {
+                    pitch = i;
+                }
+            }
+            nk_combo_end(context);
+        }
+
+        // scale picker
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, "Scale:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(context, 15, 4);
+        if (nk_option_label(context, "Major", scale == MAJOR)) scale = MAJOR;
+        if (nk_option_label(context, "minor", scale == MINOR)) scale = MINOR;
+        if (nk_option_label(context, "Pentatonic", scale == PENTATONIC)) scale = PENTATONIC;
+        if (nk_option_label(context, "Blues", scale == BLUES)) scale = BLUES;
+
+        nk_layout_row_dynamic(context, 20, 2);
+        if (nk_button_label(context, "Add Attractor")) {
+            // TODO add attractor callback
+        }
+        if (nk_button_label(context, "Add Scale")) {
+            // TODO add scale callback
+        }
+        nk_layout_row_dynamic(context, 25, 1);
+        // TODO if muted, colour and change text to unmute
+        if (nk_button_label(context, "Mute")) {
+            // mute
+        }
     }
     nk_end(context);
 }
-
-//     // upper sidebar (swarm properties)
-//     upperBar = TwNewBar("Swarm Properties");
-//     TwDefine("'Swarm Properties' position='0 0' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
-
-//     // control theta manually/check value
-//     TwAddVarRW(upperBar, "View Angle", TW_TYPE_FLOAT, &theta,"min=0.0 max=360.0 help='Set view angle.'");
-
-//     // lower sidebar (musical properties)
-//     lowerBar = TwNewBar("Musical Properties");
-//     TwDefine("'Musical Properties' position='0 150' size='200 120' valueswidth=35 color='193 131 159' alpha=255 movable=false resizable=false");
-//     // control chance of note being played
-//     TwEnumVal styleMode[] =
-//     {
-//         {DOOM, "DOOM"},
-//         {BLUES, "Blues"},
-//         {JAZZ, "Jazz"},
-//         {METAL, "Metal"},
-//         {FIREANDFLAMES, "Insane"}
-//     };
-//     TwType modeType = TwDefineEnum("Style", styleMode, 5);
-//     TwAddVarRW(lowerBar, "Style", modeType, &style, "keyIncr=n keyDecr=N help='From a gloomy to non-stop.'");
-
-//     // control whether to get random coordinates from agents or average of all
-//     TwEnumVal swarmMode[] =
-//     {
-//         {RANDOM, "Random"},
-//         {AVERAGE, "Average"},
-//     };
-//     TwType swarmType = TwDefineEnum("Mapping", swarmMode, 2);
-//     TwAddVarCB(lowerBar, "Mapping", swarmType, setSwarmMode, getSwarmMode, &swarm, "keyIncr=m keyDecr=M help='Pick random coordinates from swarm agents or average of all.'");
-
-//     TwEnumVal pitchMode[] =
-//     {
-//         {72, "C4"},  {73, "C#4"}, {74, "D4"},  {75, "D#4"},
-//         {76, "E4"},  {77, "F4"},  {78, "F#4"}, {79, "G4"},
-//         {80, "G#4"}, {81, "A4"},  {82, "A#4"}, {83, "B4"},
-//         {84, "C5"},  {85, "C#5"}, {86, "D5"},  {87, "D#5"},
-//         {88, "E5"},  {89, "F5"},  {90, "F#5"}, {91, "G5"},
-//         {92, "G#5"}, {93, "A5"},  {94, "A#5"}, {95, "B5"},
-//         {96, "C6"}
-//     };
-//     TwType pitchType = TwDefineEnum("Pitches", pitchMode, 25);
-
-//     // pick pitch for new attractor
-//     TwAddVarRW(lowerBar, "Pitch", pitchType, &GUIpitch, "label='Pitch for attractors or scale' keyIncr='p' keyDecr='P' help='The pitch for attractors to be added.'");
-
-//     // add attractor
-//     TwAddButton(lowerBar, "Add Attractor", addAttr, nullptr, "label='Add an attractor' help='Add attractor with pitch from above.'");
-
-//     // pick scale type
-//     TwEnumVal scaleMode[] =
-//     {
-//         {MAJOR, "Major"},
-//         {MINOR, "Minor"},
-//         {PENTATONIC, "Pentatonic Minor"},
-//         {BLUES, "Blues"},
-//     };
-//     TwType scalesType = TwDefineEnum("Scale Type", scaleMode, 4);
-//     TwAddVarRW(lowerBar, "Scale Type", scalesType, &GUIscale, "keyIncr=t \
-//              keyDecr=T help='Pick the type of scale to be added with attractors.'");
-//     // button to make scale based on pitch
-//     TwAddButton(lowerBar, "Add Scale", makeScale, nullptr, "label='Add a scale' \
-//               help='Add a scale with the pitch above as root.'");
-//     // button to mute/unmute
-//     TwAddButton(lowerBar, "Mute On/Off", muteSound, nullptr, "label='Mute On/Off' \
-//               help='Mute sound output.'");
-// }
 
 void drawWireCube()
 {
@@ -418,7 +440,7 @@ int tick(
     {
         lengthFactor = 100;
     }
-    else if (style == FIREANDFLAMES)
+    else if (style == PUNK)
     {
         lengthFactor = 50;
     }
