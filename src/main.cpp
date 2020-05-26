@@ -349,9 +349,6 @@ void render(GLFWwindow* window)
     swarm.drawAgents();
     // drawWireCube();
     // swarm.drawAttractors();
-
-    // draw UI
-    // TwDraw();
 }
 
 void reshape(GLFWwindow* window, int width, int height)
@@ -670,16 +667,16 @@ int main(int argc, char *argv[])
     if (window == NULL) {
         std::cout << "Failed to create window" << std::endl;
         glfwTerminate();
-        return -1;
+        std::exit(EXIT_FAILURE);
     }
     glfwMakeContextCurrent(window);
     glfwGetWindowSize(window, &width, &height);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
+        std::exit(EXIT_FAILURE);
     }
-    glViewport(0, 0, 1280, 720);
+    glViewport(0, 0, width, height);
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
@@ -706,5 +703,5 @@ int main(int argc, char *argv[])
 
 	nk_glfw3_shutdown(&glfw);
 	glfwTerminate();
-    return 0;
+    std::exit(EXIT_SUCCESS);
 }
