@@ -7,6 +7,8 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -19,7 +21,7 @@
 
 const float TO_DEGREES   = 57.295779524;
 const float MIN_DISTANCE = 100000000;
-const float BOUNDARY     = 1.0;
+const float BOUNDARY     = 1000.0;
 
 /**
  * Random number generator
@@ -30,8 +32,7 @@ const float BOUNDARY     = 1.0;
  *
  * @return float
  */
-float agentRand()
-{
+float agentRand() {
     std::random_device randomDevice;
     std::mt19937 generator(randomDevice());
     std::uniform_int_distribution<> distribution(0, CUBE_HALF_SIZE * 2);
@@ -39,8 +40,7 @@ float agentRand()
     return (float) distribution(generator);
 }
 
-Agent::Agent()
-{
+Agent::Agent() {
     // assign random colour
     float randomValue = agentRand();
 
@@ -50,8 +50,7 @@ Agent::Agent()
     direction = Triplet((agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE, (agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE, (agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE);
 }
 
-Triplet Agent::getPosition()
-{
+Triplet Agent::getPosition() {
     return this->position;
 }
 
@@ -61,19 +60,16 @@ Triplet Agent::getPosition()
  * @param int colourCount Positive (+) value for blue, negative (-) for red
  * @return void
  */
-void Agent::setColour(int colourCount)
-{
+void Agent::setColour(int colourCount) {
     colour = colourCount > 0 ? BLUE : RED;
 }
 
-void Agent::computeChange(Triplet newDirection, float count, Triplet direction, float maxForce)
-{
+void Agent::computeChange(Triplet newDirection, float count, Triplet direction, float maxForce) {
     newDirection.scalarDiv(count);
     newDirection.normalise();
     newDirection = newDirection - direction;
     // truncate to maximum force
-    if (newDirection.length() > maxForce)
-    {
+    if (newDirection.length() > maxForce) {
         newDirection.normalise();
         newDirection.scalarMul(maxForce);
     }
@@ -93,22 +89,18 @@ Triplet Agent::repulsion(
     float blindAngle,
     float maxForce
 ) {
-    // std::cout << agents[499].getPosition().getX() << std::endl;
     Triplet newDirection(0.0, 0.0, 0.0);
     int count = 0;
 
-    for (std::size_t i = 0, size = agents.size(); i < size; ++i)
-    {
+    for (std::size_t i = 0, size = agents.size(); i < size; ++i) {
         // calculate distance to another agent
         float distance = position.distance(agents.at(i).position);
         // if not itself and within radius
-        if (distance > 0 && distance <= radiusRepulsion)
-        {
+        if (distance > 0 && distance <= radiusRepulsion) {
             // check if not behind
             Triplet vectorBetweenPoints = agents.at(i).position - position;
             float   angle               = direction.angle(vectorBetweenPoints);
-            if (angle <= (180 - blindAngle))
-            {
+            if (angle <= (180 - blindAngle)) {
                 // invert vector
                 vectorBetweenPoints.scalarMul(-1);
                 vectorBetweenPoints.normalise();
@@ -120,8 +112,7 @@ Triplet Agent::repulsion(
     }
 
     // average and add to acceleration
-    if (count > 0)
-    {
+    if (count > 0) {
         computeChange(newDirection, (float) count, direction, maxForce);
     }
 
@@ -148,37 +139,30 @@ Triplet Agent::orientation(
     int count       = 0;
     int colourCount = 0;
 
-    for (std::size_t i = 0, size = agents.size(); i < size; ++i)
-    {
+    for (std::size_t i = 0, size = agents.size(); i < size; ++i) {
         // calculate distance
         float distance = position.distance(agents.at(i).position);
         // if within range (also not itself)
-        if (distance > radiusRepulsion && distance <= radiusOrientation)
-        {
+        if (distance > radiusRepulsion && distance <= radiusOrientation) {
             // check if behind
             Triplet vectorBetweenPoints = agents.at(i).position - position;
             float   angle               = direction.angle(vectorBetweenPoints);
-            if (angle <= (180 - blindAngle))
-            {
+            if (angle <= (180 - blindAngle)) {
                 newDirection = newDirection + agents.at(i).direction;
                 ++count;
 
                 // check colour R value
                 // if 1.0 it is red so take 1, else add 1 (is blue)
-                if (agents.at(i).colour.getX() == 1.0)
-                {
+                if (agents.at(i).colour.getX() == 1.0) {
                     --colourCount;
-                }
-                else
-                {
+                } else {
                     ++colourCount;
                 }
             }
         }
     }
 
-    if (count > 0)
-    {
+    if (count > 0) {
         // average and add to acceleration
         computeChange(newDirection, (float) count, direction, maxForce);
     }
@@ -207,26 +191,22 @@ Triplet Agent::attraction(
     Triplet newDirection(0.0, 0.0, 0.0);
     int count = 0;
 
-    for (std::size_t i = 0, size = agents.size(); i < size; ++i)
-    {
+    for (std::size_t i = 0, size = agents.size(); i < size; ++i) {
         // calculate distance
         float distance = position.distance(agents.at(i).position);
         // if within range
-        if (distance > radiusOrientation && distance <= radiusAttraction)
-        {
+        if (distance > radiusOrientation && distance <= radiusAttraction) {
             // check if behind
             Triplet vectorBetweenPoints = agents.at(i).position - position;
             float   angle               = direction.angle(vectorBetweenPoints);
-            if (angle <= (180 - blindAngle))
-            {
+            if (angle <= (180 - blindAngle)) {
                 newDirection = newDirection + vectorBetweenPoints;
                 ++count;
             }
         }
     }
 
-    if (count > 0)
-    {
+    if (count > 0) {
         // average and add to acceleration
         computeChange(newDirection, (float) count, direction, maxForce);
     }
@@ -243,34 +223,24 @@ Triplet Agent::attraction(
  * @param Triplet max
  * @return Triplet
  */
-Triplet Agent::bounding()
-{
+Triplet Agent::bounding() {
     Triplet vector(0.0, 0.0, 0.0);
 
-    if (position.getX() <= MIN.getX())
-    {
+    if (position.getX() <= MIN.getX()) {
         vector.setX(BOUNDARY);
-    }
-    else if (position.getX() >= MAX.getX())
-    {
+    } else if (position.getX() >= MAX.getX()) {
         vector.setX(-BOUNDARY);
     }
 
-    if (position.getY() <= MIN.getY())
-    {
+    if (position.getY() <= MIN.getY()) {
         vector.setY(BOUNDARY);
-    }
-    else if (position.getY() >= MAX.getY())
-    {
+    } else if (position.getY() >= MAX.getY()) {
         vector.setY(-BOUNDARY);
     }
 
-    if (position.getZ() <= MIN.getZ())
-    {
+    if (position.getZ() <= MIN.getZ()) {
         vector.setZ(BOUNDARY);
-    }
-    else if (position.getZ() >= MAX.getZ())
-    {
+    } else if (position.getZ() >= MAX.getZ()) {
         vector.setZ(-BOUNDARY);
     }
 
@@ -278,25 +248,92 @@ Triplet Agent::bounding()
 }
 
 /**
- * Draw an agent
- *
+ * Setup an agent to be drawn
  *
  * @return void
  */
-void Agent::draw()
-{
-    // glColor4f(colour.getX(), colour.getY(), colour.getZ(), 1.0);
-    // glPushMatrix();
-    // glTranslatef(position.getX(), position.getY(), position.getZ());
-    // Triplet tempDirection = Triplet(direction.getX(), direction.getY(), direction.getZ());
-    // tempDirection.scalarMul(TO_DEGREES);
-    // glRotatef(tempDirection.getX(), 1.0, 0.0, 0.0);
-    // glRotatef(tempDirection.getY(), 0.0, cos(direction.getX()), -sin(direction.getX()));
-    // glRotatef(tempDirection.getZ(), 0.0, 0.0, 1.0);
-    // // scaling for looks
-    // glScalef(1.0, 0.25, 0.25);
-    // glutSolidCone(5.5, 5.5, 5, 1);
-    // glPopMatrix();
+void Agent::setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    // cone vertices
+    int points = 10;
+
+    float angle     = 0.0f;
+    float increment = glm::radians(360.0f) / (float) points;
+
+    float vertices[72];
+
+    // bottom circle vertices
+    for (int i = 0; i < points; ++i) {
+        vertices[i * 6]     = cos(angle) * 0.1;
+        vertices[i * 6 + 1] = -0.2f;
+        vertices[i * 6 + 2] = sin(angle) * 0.1;
+        vertices[i * 6 + 3] = colour.getX();
+        vertices[i * 6 + 4] = colour.getY();
+        vertices[i * 6 + 5] = colour.getZ();
+        angle += increment;
+    }
+
+    // top vertex
+    vertices[60] = 0.0f;
+    vertices[61] = 0.3f;
+    vertices[62] = 0.0f;
+    vertices[63] = colour.getX();
+    vertices[64] = colour.getY();
+    vertices[65] = colour.getZ();
+
+    unsigned int indices[] = {
+        10,  0, 1,
+        10,  1, 2,
+        10,  2, 3,
+        10,  3, 4,
+        10,  4, 5,
+        10,  5, 6,
+        10,  6, 7,
+        10,  7, 8,
+        10,  8, 9,
+        10,  9, 0
+    };
+
+    glGenBuffers(1, VBO);
+    glGenBuffers(1, EBO);
+    glGenVertexArrays(1, VAO);
+
+    glBindVertexArray(*VAO);
+
+    // vertices and colour
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+}
+
+/**
+ * Transform agent model
+ *
+ * @param glm::mat4 *agentModel
+ * @return void
+ */
+void Agent::transform(glm::mat4 *agentModel) {
+    *agentModel = glm::translate(*agentModel, glm::vec3(position.getX(), position.getY(), position.getZ()));
+    *agentModel = glm::scale(*agentModel, glm::vec3(10.0f, 10.0f, 10.0f));
+    *agentModel = glm::rotate(*agentModel, glm::radians(direction.getY() * TO_DEGREES), glm::vec3(cos(direction.getX()), 0.0f, -sin(direction.getX())));
+    *agentModel = glm::rotate(*agentModel, glm::radians(direction.getZ() * TO_DEGREES), glm::vec3(0.0f, 0.0f, 1.0f));
+    *agentModel = glm::rotate(*agentModel, glm::radians(direction.getX() * TO_DEGREES), glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+/**
+ * Draw an agent
+ *
+ * @return void
+ */
+void Agent::draw() {
+    glDrawElements(GL_TRIANGLE_FAN, 30, GL_UNSIGNED_INT, 0);
 }
 
 /**
@@ -306,18 +343,14 @@ void Agent::draw()
  * @param std::vector<Attractor> attractors
  * @return void
  */
-void Agent::move(float speed, std::vector<Attractor> attractors)
-{
-    if (attractors.size() != 0)
-    {
+void Agent::move(float speed, std::vector<Attractor> attractors, float deltaTime) {
+    if (attractors.size() != 0) {
         float  minDistance = MIN_DISTANCE;
         size_t index       = 0;
 
-        for (std::size_t i = 0, size = attractors.size(); i < size; ++i)
-        {
+        for (std::size_t i = 0, size = attractors.size(); i < size; ++i) {
             float distance = position.distance(attractors.at(i).getPosition());
-            if (distance < minDistance)
-            {
+            if (distance < minDistance) {
                 index       = i;
                 minDistance = distance;
             }
@@ -333,6 +366,7 @@ void Agent::move(float speed, std::vector<Attractor> attractors)
 
     Triplet stepDirection = Triplet(direction.getX(), direction.getY(), direction.getZ());
     stepDirection.scalarMul(speed);
+    stepDirection.scalarMul(deltaTime);
     position = position + stepDirection;
 
     // reset acceleration
@@ -373,8 +407,7 @@ void Agent::step(
     Triplet attractionVector  = attraction(agents, radiusOrientation, radiusAttraction, angle, maxForce);
 
     Triplet tmpVector = orientationVector + attractionVector;
-    if (orientationVector.length() != 0 && attractionVector.length() != 0)
-    {
+    if (orientationVector.length() != 0 && attractionVector.length() != 0) {
         tmpVector.scalarDiv(2);
     }
 

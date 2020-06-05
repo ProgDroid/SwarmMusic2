@@ -7,9 +7,11 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <Shader.h>
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <random>
 #include <thread>
 
@@ -20,6 +22,10 @@
 #include <stk/Plucked.h>
 #include <stk/RtAudio.h>
 #include <stk/Skini.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
@@ -35,8 +41,7 @@
 #include "nuklear.h"
 #include "nuklear_glfw_gl3.h"
 
-struct TickData
-{
+struct TickData {
     stk::Instrmnt *instrument;
     stk::StkFloat frequency;
     long counter;
@@ -48,8 +53,9 @@ struct TickData
 
 const float CENTRAL_C      = 261.63;
 const float CUBE_SIZE_HALF = 400.0;
-const float OLIVEBLACK     = 0.23529411764;
+const float OLIVE_BLACK    = 0.23529411764;
 const float PI             = 3.14159265;
+const float UPDATE_RATE    = 4.0;
 const int DOOM             = 0;
 const int JAZZ             = 1;
 const int POP              = 2;
@@ -68,20 +74,25 @@ const int AVERAGE          = 1;
 const int C_MIDI_PITCH     = 72;
 const int LENGTH_FACTOR    = 250;
 
-static float repulsionRadius   = 20.0;
-static float orientationRadius = 50.0;
-static float attractionRadius  = 110.0;
-static float blindAngle        = 10;
-static float maxForce          = 0.7;
-static float speed             = 1.5;
+static float repulsionRadius   = 20.0f;
+static float orientationRadius = 50.0f;
+static float attractionRadius  = 110.0f;
+static float blindAngle        = 10.0f;
+static float maxForce          = 30.7f;
+static float speed             = 30.5f;
 static int   scale             = 0;
 static int   style             = POP;
 
 static unsigned int GUIpitch = 0;
 
-bool  canExit  = false;
-bool  mute     = false;
-float theta    = 0.0;
+bool  canExit    = false;
+bool  mute       = false;
+float deltaTime  = 0.0f;
+float deltaSum   = 0.0f;
+float fps        = 0.0f;
+float lastFrame  = 0.0f;
+float theta      = 0.0f;
+int   frameCount = 0;
 
 float noteLength, velocity;
 int   positionX;
@@ -90,9 +101,10 @@ Swarm swarm;
 
 /**
  * Random number generator
+ *
+ * @return float
  */
-float mainRand()
-{
+float mainRand() {
     std::random_device randomDevice;
     std::mt19937 generator(randomDevice());
     std::uniform_int_distribution<> distribution(0, 100);
@@ -100,23 +112,28 @@ float mainRand()
     return (float) distribution(generator);
 }
 
-void makeScale(int givenPitch) {
+/**
+ * Make a scale starting on a given pitch
+ *
+ * @param int givenPitch
+ *
+ * @return void
+ */
+void makeScale(int givenPitch, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     swarm.resetAttractors();
 
     int root      = givenPitch;
     int scaleType = scale;
 
     // normalise root to make 2 octave scale
-    if (root >= 84)
-    {
+    if (root >= 84) {
         root -= 12;
     }
 
     std::vector<int> intervals;
 
     // todo scales as objects?
-    if (scaleType == MAJOR)
-    {
+    if (scaleType == MAJOR) {
         intervals.reserve(MAJOR_SIZE);
         intervals.push_back(2);
         intervals.push_back(2);
@@ -125,9 +142,7 @@ void makeScale(int givenPitch) {
         intervals.push_back(2);
         intervals.push_back(2);
         intervals.push_back(1);
-    }
-    else if (scaleType == MINOR)
-    {
+    } else if (scaleType == MINOR) {
         intervals.reserve(MINOR_SIZE);
         intervals.push_back(2);
         intervals.push_back(1);
@@ -136,18 +151,14 @@ void makeScale(int givenPitch) {
         intervals.push_back(1);
         intervals.push_back(2);
         intervals.push_back(2);
-    }
-    else if (scaleType == PENTATONIC)
-    {
+    } else if (scaleType == PENTATONIC) {
         intervals.reserve(PENTATONIC_SIZE);
         intervals.push_back(3);
         intervals.push_back(2);
         intervals.push_back(2);
         intervals.push_back(3);
         intervals.push_back(2);
-    }
-    else if (scaleType == BLUES)
-    {
+    } else if (scaleType == BLUES) {
         intervals.reserve(BLUES_SIZE);
         intervals.push_back(3);
         intervals.push_back(2);
@@ -158,13 +169,24 @@ void makeScale(int givenPitch) {
     }
 
     // 2 iterations over the intervals to make 2 octaves scale
-    for (int i = 0, size = intervals.size(); i < size * 2; ++i)
-    {
+    for (int i = 0, size = intervals.size(); i < size * 2; ++i) {
         int index = i % size;
-        swarm.addAttractor(root + intervals[index], index);
+        swarm.addAttractor(root + intervals[index], VBO, EBO, VAO, index);
     }
 }
 
+/**
+ * Slider creation for UI
+ *
+ * @param nk_context *context
+ * @param const char *label
+ * @param float min
+ * @param float max
+ * @param float *value
+ * @param float step
+ *
+ * @return void
+ */
 void slider(nk_context *context, const char *label, float min, float max, float *value, float step) {
     // colour bar based on how filled it is
     float ratio = (*value - min) / (max - min);
@@ -188,10 +210,17 @@ void slider(nk_context *context, const char *label, float min, float max, float 
 /**
  * Draw the UI elements
  *
+ * @param nk_glfw *glfw
+ * @param nk_context *context
+ * @param unsigned int *VBO
+ * @param unsigned int *EBO
+ * @param unsigned int *VAO
+ *
  * @return void
  */
-void drawUI(nk_glfw *glfw, nk_context *context) {
+void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     // to control the swarm properties
+    context->style.window.fixed_background.data.color.a = 255;
     if (nk_begin(context,
                     "Swarm Properties",
                     nk_rect(0, 0, 285, 155),
@@ -213,10 +242,10 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
         slider(context, "Blind Angle:", 0.0, 45.0, &blindAngle, 1.0);
 
         // speed
-        slider(context, "Speed:", 0.5, 3.5, &speed, 0.1);
+        slider(context, "Speed:", 10.5, 63.5, &speed, 0.1);
 
         // maximum force
-        slider(context, "Force:", 0.1, 2.0, &maxForce, 0.1);
+        slider(context, "Force:", 10.1, 50.0, &maxForce, 0.1);
 
         // TODO view angle?
     }
@@ -293,12 +322,12 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
         // add attractor
         nk_layout_row_dynamic(context, 20, 2);
         if (nk_button_label(context, "Add Attractor")) {
-            swarm.addAttractor((int) GUIpitch + C_MIDI_PITCH, -1);
+            swarm.addAttractor((int) GUIpitch + C_MIDI_PITCH, VBO, EBO, VAO, -1);
         }
 
         // add scale
         if (nk_button_label(context, "Add Scale")) {
-            makeScale((int) GUIpitch + C_MIDI_PITCH);
+            makeScale((int) GUIpitch + C_MIDI_PITCH, VBO, EBO, VAO);
         }
 
         // mute
@@ -314,100 +343,140 @@ void drawUI(nk_glfw *glfw, nk_context *context) {
         }
     }
     nk_end(context);
+
+    context->style.window.fixed_background.data.color.a = 0;
+    // simple fps display
+    if (nk_begin(context,
+                    "fps",
+                    nk_rect((glfw->display_width / 2) - 15, 0, 30, 25),
+                    NK_WINDOW_NO_INPUT | NK_WINDOW_NO_SCROLLBAR
+            )
+        ) {
+        std::stringstream fpsStream;
+        fpsStream << std::fixed << std::setprecision(0) << fps;
+
+        nk_layout_row_dynamic(context, 15, 1);
+        nk_label(context, fpsStream.str().c_str(), NK_TEXT_RIGHT);
+    }
+    nk_end(context);
 }
 
-void drawWireCube()
-{
-    // glColor4f(0.0, 0.0, 0.0, 1.0);
-    // // glPushMatrix();
-    // // glMatrixMode(GL_MODELVIEW);
-    // // glLoadIdentity();
-    // glBegin(GL_QUADS);
-    //     glVertex3f(-1.0f, -1.0f, 1.0f);
-    //     glVertex3f(-1.0f, -1.0f, -1.0f);
-    //     glVertex3f(1.0f, -1.0f, -1.0f);
-    //     glVertex3f(1.0f, -1.0f, 1.0f);
-    // glEnd();
-    // glPopMatrix();
-    // glColor4f(0.0, 0.0, 0.0, 1.0);
-    // glPushMatrix();
-    // glutWireCube(800.0);
-    // glPopMatrix();
+/**
+ * Set properties from UI
+ *
+ * @return void
+ */
+void setProperties() {
+    if (swarm.getRepulsionRadius() != repulsionRadius) {
+        swarm.setRepulsionRadius(repulsionRadius);
+    }
+
+    if (swarm.getOrientationRadius() != orientationRadius) {
+        swarm.setOrientationRadius(orientationRadius);
+    }
+
+    if (swarm.getAttractionRadius() != attractionRadius) {
+        swarm.setAttractionRadius(attractionRadius);
+    }
+
+    if (swarm.getBlindAngle() != blindAngle) {
+        swarm.setBlindAngle(blindAngle);
+    }
+
+    if (swarm.getSpeed() != speed) {
+        swarm.setSpeed(speed);
+    }
+
+    if (swarm.getMaxForce() != maxForce) {
+        swarm.setMaxForce(maxForce);
+    }
 }
 
-void render(GLFWwindow* window)
-{
-    // glPushMatrix();
-    // glLoadIdentity();
-    // gluLookAt(1250 * sin(theta * (PI / 180)), 500.0, 1250 * cos(theta * (PI / 180)),
-    //           0.0, -100.0, 0.0,
-    //           0.0, 1.0, 0.0);
-    // glPopMatrix();
+/**
+ * Setup wire cure
+ *
+ * @return void
+ */
+void setupWireCube(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    // cube vertices
+    float vertices[] = {     // colour
+        -1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f
+    };
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    unsigned int indices[] = {
+        0, 1,
+        1, 3,
+        3, 2,
+        2, 0,
+        0, 4,
+        1, 5,
+        2, 6,
+        3, 7,
+        4, 5,
+        5, 7,
+        7, 6,
+        6, 4,
+    };
 
-    swarm.drawAgents();
-    // drawWireCube();
-    // swarm.drawAttractors();
+    glGenBuffers(1, VBO);
+    glGenBuffers(1, EBO);
+    glGenVertexArrays(1, VAO);
+
+    glBindVertexArray(*VAO);
+
+    // vertices and colour
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 }
 
-void reshape(GLFWwindow* window, int width, int height)
-{
-    // glClearColor(OLIVEBLACK, OLIVEBLACK, OLIVEBLACK, 1.0);
-    // glViewport(0, 0, (GLsizei) width, (GLsizei) height);
-    // // glMatrixMode(GL_PROJECTION);
-    // // glLoadIdentity();
-    // // gluPerspective(60, (GLfloat) width / (GLfloat) height, 1.0, 10000.0);
-    // // glMatrixMode(GL_MODELVIEW);
-    // TwWindowSize(width, height);
-    // positionX = width - 200;
-}
-
-void idle()
-{
-    // glutPostRedisplay();
-}
-
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-    {
-        if (theta <= 0.0)
-        {
-            theta = 359.5;
-        }
-        else
-        {
-            theta -= 0.5;
+void processInput(GLFWwindow* window) {
+    // LEFT
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        if (theta < 0.0f) {
+            theta = 360.0f;
+        } else {
+            theta -= 10.0f * deltaTime;
         }
     } // LEFT
 
-    if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-    {
-        if (theta >= 359.5)
-        {
-            theta = 0.0;
-        }
-        else
-        {
-            theta += 0.5;
+    // RIGHT
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        if (theta > 360.0f) {
+            theta = 0.0f;
+        } else {
+            theta += 10.0f * deltaTime;
         }
     } // RIGHT
 
-    // to exit cleanly
-    if (key == GLFW_KEY_HOME && action == GLFW_PRESS)
-    {
+    // ESCAPE to exit cleanly
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         canExit = true;
-    } // HOME
+    } // ESCAPE
 
-    if (key == GLFW_KEY_PAGE_UP && action == GLFW_PRESS)
-    {
+    // PAGE UP to reset app
+    if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS) {
         swarm.resetAll();
     }
 
-    if (key == GLFW_KEY_PAGE_DOWN && action == GLFW_PRESS)
-    {
+    // PAGE DOWN to reset attractors only
+    if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS) {
         swarm.resetAttractors();
     }
 }
@@ -424,48 +493,35 @@ int tick(
 
     register stk::StkFloat *samples = (stk::StkFloat *) outputBuffer;
 
-    for (unsigned int i = 0; i < nBufferFrames; ++i)
-    {
+    for (unsigned int i = 0; i < nBufferFrames; ++i) {
         *samples++ = data->instrument->tick();
-        if (++data->counter % 2000 == 0)
-        {
+        if (++data->counter % 2000 == 0) {
             data->instrument->setFrequency(data->frequency);
         }
     }
 
-    int lengthFactor = 110;
-    if (style == DOOM || style == BLUES)
-    {
-        lengthFactor = 200;
-    }
-    else if (style == JAZZ || style == METAL)
-    {
-        lengthFactor = 100;
-    }
-    else if (style == PUNK)
-    {
-        lengthFactor = 50;
-    }
+    // if DOOM or BLUES, 200. if JAZZ or METAL, 100. if PUNK, 50. Default 110
+    int lengthFactor = (style == DOOM || style == BLUES) ? 200 : (style == JAZZ || style == METAL) ? 100 : (style == PUNK) ? 50 : 110;
 
-    if (data->counter > noteLength * lengthFactor)
-    {
+    if (data->counter > noteLength * lengthFactor) {
         data->done = true;
     }
 
     return 0;
 }
 
-void playMusic()
-{
+/**
+ * Compute notes to play
+ *
+ * @return void
+ */
+void playMusic() {
     // x coordinate determines pitch between C4=72 and C6=96,
     // for a range of 2 octaves
     pitch = ((swarm.getAveragePosition().getX() + CUBE_SIZE_HALF) * 24) / (CUBE_SIZE_HALF * 2);
-    if (pitch < 0)
-    {
+    if (pitch < 0) {
         pitch = 0;
-    }
-    else if (pitch > 24)
-    {
+    } else if (pitch > 24) {
         pitch = 24;
     }
     pitch += 72;
@@ -473,22 +529,23 @@ void playMusic()
     // y coordinate determines velocity ("volume" at which individual note is played)
     // 0.0 to 1.0
     velocity = ((swarm.getAveragePosition().getY() + CUBE_SIZE_HALF)) / (CUBE_SIZE_HALF * 2);
-    if (velocity < 0)
-    {
+    if (velocity < 0) {
         velocity = 0;
-    }
-    else if (velocity > 1.0)
-    {
+    } else if (velocity > 1.0) {
         velocity = 1.0;
     }
 
     // z coordinate determines note length in ms
     noteLength = ((swarm.getAveragePosition().getZ() + CUBE_SIZE_HALF)) / (CUBE_SIZE_HALF * 2);
-    noteLength = noteLength * LENGTH_FACTOR;
+    noteLength = noteLength * LENGTH_FACTOR * deltaTime;
 }
 
-void music()
-{
+/**
+ * The music thread
+ *
+ * @return void
+ */
+void music() {
     stk::Stk::setSampleRate(44100.0);
     stk::Stk::setRawwavePath("./stk-4.6.0/rawwaves");
 
@@ -503,152 +560,77 @@ void music()
     RtAudioFormat format           = (sizeof(stk::StkFloat) == 8) ? RTAUDIO_FLOAT64 : RTAUDIO_FLOAT32;
     unsigned      int bufferFrames = stk::RT_BUFFER_SIZE;
 
-    try
-    {
+    try {
         dac.openStream(&parameters, NULL, format, (unsigned int) stk::Stk::sampleRate(), &bufferFrames, &tick, (void *) &data);
-    }
-    catch (RtAudioError &error)
-    {
+    } catch (RtAudioError &error) {
         error.printMessage();
         return;
     }
 
-    try
-    {
+    try {
         data.instrument = new stk::Plucked(CENTRAL_C);
-    }
-    catch (stk::StkError &)
-    {
+    } catch (stk::StkError &) {
         delete data.instrument;
         return;
     }
 
-    try
-    {
+    try {
         dac.startStream();
-    }
-    catch (RtAudioError &error)
-    {
+    } catch (RtAudioError &error) {
         error.printMessage();
         delete data.instrument;
         return;
     }
 
-    while(!canExit)
-    {
+    while(!canExit) {
         data.frequency = stk::Midi2Pitch[pitch];
-        if (mainRand() < (float) style && !mute)
-        {
+        if (mainRand() < (float) style && !mute) {
             data.instrument->noteOn(data.frequency, velocity);
         }
 
-        while(!data.done)
-        {
+        while(!data.done) {
             stk::Stk::sleep(noteLength);
         }
 
         data.counter = 0;
-        data.done = false;
+        data.done    = false;
     }
 
-    try
-    {
+    try {
         dac.closeStream();
-    }
-    catch (RtAudioError &error)
-    {
+    } catch (RtAudioError &error) {
         error.printMessage();
     }
 
     delete data.instrument;
-
-    return;
 }
 
 /**
- * Timer function to control stepping
+ * Error printing callback
+ * 
+ * @param int error
+ * @param const char* description
  *
- * @param int val
  * @return void
  */
-void timer(int val) {
-    // glutPostRedisplay();
-    // glutTimerFunc(16, timer, 0);
-    swarm.swarm();
-    playMusic();
+void errorCallback(int error, const char* description) {
+    std::cerr << "Error: " << description << std::endl;
 }
 
-void errorCallback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
-}
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
+/**
+ * Frame buffer size callback (called when resizing window)
+ * 
+ * @param GLFWwindow* window
+ * @param int width
+ * @param int height
+ *
+ * @return void
+ */
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-int main(int argc, char *argv[])
-{
-    // initGraphics();
-    // glutInit(&argc, argv);
-    // glfwSetKeyCallback(window, (GLFWkeyfun) special);
-    // glfwGetWindowSize(window, NULL, NULL);
-    // glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
-    // int width = w;
-    // glfwSetCharCallback(window, (GLFWcharfun)special);
-    // glfwSetFramebufferSizeCallback(window, reshape);
-    // glutMouseFunc((GLUTmousebuttonfun)TwEventMouseButton    // TwInit(TW_OPENGL, NULL);
-    // TwWindowSize(1280, 720);GLUT);
-    // glutMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
-    // glutPassiveMotionFunc((GLUTmousemotionfun)TwEventMouseMotionGLUT);
-    // glutKeyboardFunc((GLUTkeyboardfun)TwEventKeyboardGLUT);
-    // glutSpecialFunc(special);
-    // TwGLUTModifiersFunc(glutGetModifiers);
-    // glutMainLoop();
-
-    // if (!glfwInit())
-    // {
-    //     glfwTerminate();
-    //     std::exit(EXIT_FAILURE);
-    // }
-
-    // positionX = 1280 - 200;
-
-    // glfwSetErrorCallback(errorCallback);
-    // GLFWwindow* window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
-    // if (!window)
-    // {
-    //     glfwTerminate();
-    //     std::exit(EXIT_FAILURE);
-    // }
-    // glfwMakeContextCurrent(window);
-
-    // glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun)TwEventMouseButtonGLFW);
-    // glfwSetCursorPosCallback(window, (GLFWcursorposfun)TwEventMousePosGLFW);
-    // glfwSetKeyCallback(window, keyCallback);
-    // glfwSetWindowSizeCallback(window, reshape);
-    // defineUI();
-    // glEnable(GL_DEPTH_TEST);
-    // glDepthFunc(GL_LESS);
-    // glEnable(GL_POINT_SMOOTH);
-    // glfwSwapInterval(1);
-    // reshape(window, 1280, 720);
-
-    // std::thread soundThread(music);
-    // while (!glfwWindowShouldClose(window))
-    // {
-    //     render(window);
-    //     glfwSwapBuffers(window);
-    //     glfwPollEvents();
-
-    //     swarm.swarm();
-    //     // playMusic();
-    // }
-    // soundThread.join();
-    // TwTerminate();
-    // glfwTerminate();
-
+int main() {
     static GLFWwindow *window;
     int width = 0, height = 0;
 
@@ -665,7 +647,7 @@ int main(int argc, char *argv[])
 
     window = glfwCreateWindow(1280, 720, "Swarm Music", NULL, NULL);
     if (window == NULL) {
-        std::cout << "Failed to create window" << std::endl;
+        std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();
         std::exit(EXIT_FAILURE);
     }
@@ -673,12 +655,16 @@ int main(int argc, char *argv[])
     glfwGetWindowSize(window, &width, &height);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::cerr << "Failed to initialize GLAD" << std::endl;
         std::exit(EXIT_FAILURE);
     }
     glViewport(0, 0, width, height);
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
+    float cap = 1.0f / glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
+
+    Shader shader("./shaders/test.vs", "./shaders/test.fs");
 
     // UI
     struct nk_glfw glfw = {0};
@@ -687,19 +673,99 @@ int main(int argc, char *argv[])
 	nk_glfw3_font_stash_begin(&glfw, &atlas);
 	nk_glfw3_font_stash_end(&glfw);
 
+    unsigned int VBO, EBO, VAO;
+    setupWireCube(&VBO, &EBO, &VAO);
+    glm::mat4 cubeModel = glm::mat4(1.0f);
+    cubeModel = glm::scale(cubeModel, glm::vec3(400.0f, 400.0f, 400.0f));
+
+    unsigned int agentVBO, agentEBO, agentVAO;
+    swarm.setupDrawAgents(&agentVBO, &agentEBO, &agentVAO);
+
+    unsigned int attractorVBO, attractorEBO, attractorVAO;
+
+    std::thread soundThread(music);
+
 	while (!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        deltaSum += deltaTime;
+        frameCount++;
+        lastFrame = currentFrame;
+
+        if (deltaSum > 1.0 / UPDATE_RATE) {
+            fps = frameCount / deltaSum;
+            frameCount = 0;
+            deltaSum = 0;
+        }
+
+        glfwGetWindowSize(window, &width, &height);
+
+        glEnable(GL_DEPTH_TEST);
+        processInput(window);
 
 		nk_glfw3_new_frame(&glfw); 
-        drawUI(&glfw, context);
+        drawUI(&glfw, context, &attractorVBO, &attractorEBO, &attractorVAO);
 
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(OLIVE_BLACK, OLIVE_BLACK, OLIVE_BLACK, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shader.use();
+
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::lookAt(glm::vec3(1500.0f * sin(theta * (PI / 180.0f)), 500.0f, 1500.0f * cos(theta * (PI / 180.0f))),
+                           glm::vec3(0.0f, -80.0f, 0.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 projection;
+        projection = glm::perspective(glm::radians(45.0f), (float) width / (float) height, 0.1f, 2500.0f);
+
+        // draw cube
+        glBindVertexArray(VAO);
+
+        shader.setMat4("model", cubeModel);
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
+
+        glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
+
+        // draw agents
+        glBindVertexArray(agentVAO);
+        swarm.drawAgents(shader);
+
+        glBindVertexArray(attractorVAO);
+        swarm.drawAttractors(shader);
+
+        glBindVertexArray(0);
 
 		nk_glfw3_render(&glfw, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
 
 		glfwSwapBuffers(window);
+		glfwPollEvents();
+
+        setProperties();
+        swarm.swarm(deltaTime);
+        playMusic();
+
+        while (glfwGetTime() < lastFrame + cap) {
+            // do nothing
+        }
 	}
+
+    if (soundThread.joinable()) {
+        soundThread.join();
+    }
+
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &VBO);
+
+    glDeleteVertexArrays(1, &agentVAO);
+    glDeleteBuffers(1, &agentEBO);
+    glDeleteBuffers(1, &agentVBO);
+
+    glDeleteVertexArrays(1, &attractorVAO);
+    glDeleteBuffers(1, &attractorEBO);
+    glDeleteBuffers(1, &attractorVBO);
 
 	nk_glfw3_shutdown(&glfw);
 	glfwTerminate();

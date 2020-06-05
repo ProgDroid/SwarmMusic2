@@ -8,6 +8,8 @@
 #ifndef AGENT_H_
 #define AGENT_H_
 
+#include <glm/glm.hpp>
+
 #include <vector>
 
 #include <Attractor.h>
@@ -22,19 +24,19 @@ const float RED_G          = 0.35294117647;
 const float RED_B          = 0.3725490196;
 const float DEFAULT_WHITE  = 0.96078431372;
 
-class Agent {
+class Agent
+{
 private:
     Triplet position;  // random
     Triplet direction; // also random, always needs to be normalised
 
-    Triplet acceleration = Triplet(0.0, 0.0, 0.0);;
+    Triplet acceleration = Triplet(0.0, 0.0, 0.0);
     Triplet BLUE         = Triplet(BLUE_R, BLUE_G, BLUE_B);
     Triplet RED          = Triplet(RED_R, RED_G, RED_B);
     Triplet WHITE        = Triplet(DEFAULT_WHITE, DEFAULT_WHITE, DEFAULT_WHITE);
     Triplet colour       = Triplet(0.0, 0.0, 0.0);
     Triplet MIN          = Triplet(-CUBE_HALF_SIZE, -CUBE_HALF_SIZE, -CUBE_HALF_SIZE);
     Triplet MAX          = Triplet(CUBE_HALF_SIZE, CUBE_HALF_SIZE, CUBE_HALF_SIZE);
-
 public:
     Agent();
 
@@ -48,8 +50,10 @@ public:
     Triplet attraction(std::vector<Agent> &agents, float radiusOrientation, float radiusAttraction, float blindAngle, float maxForce);
     Triplet bounding();
 
+    void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void transform(glm::mat4 *agentModel);
     void draw();
-    void move(float speed, std::vector<Attractor> attractors);
+    void move(float speed, std::vector<Attractor> attractors, float deltaTime);
     void step(std::vector<Agent> &agents, float radiusRepulsion, float radiradiusOrientationusO, float radiusAttraction, float angle, float maxForce);
 };
 

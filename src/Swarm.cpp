@@ -5,6 +5,9 @@
  * @author Fernando Ferreira
  */
 
+#include <glm/glm.hpp>
+#include <Shader.h>
+
 #include <random>
 #include <vector>
 
@@ -27,8 +30,7 @@ const int SCALES         = 1;
  *
  * @return float
  */
-float swarmRand()
-{
+float swarmRand() {
     std::random_device randomDevice;
     std::mt19937 generator(randomDevice());
     std::uniform_int_distribution<> distribution(0, 20);
@@ -36,162 +38,133 @@ float swarmRand()
     return (float)distribution(generator);
 }
 
-Swarm::Swarm()
-{
+Swarm::Swarm() {
     agents.reserve(MAX_SIZE);
     attractors.reserve(MAX_ATTRACTORS);
     addAgents();
 
-    radiusRepulsion   = 20.0;
-    radiusOrientation = 50.0;
-    radiusAttraction  = 80.0;
-    blindAngle        = 10.0;
-    speed             = 1.5;
-    maxForce          = 0.7;
+    radiusRepulsion   = 20.0f;
+    radiusOrientation = 50.0f;
+    radiusAttraction  = 110.0f;
+    blindAngle        = 10.0f;
+    speed             = 30.5f;
+    maxForce          = 30.7f;
     swarmMode         = RANDOM;
 
     Triplet averagePosition(0.0, 0.0, 0.0);
 }
 
-int Swarm::getSize()
-{
+int Swarm::getSize() {
     return this->agents.size();
 }
 
-int Swarm::getAttractorsCount()
-{
+int Swarm::getAttractorsCount() {
     return this->attractors.size();
 }
 
-float Swarm::getRepulsionRadius()
-{
+float Swarm::getRepulsionRadius() {
     return this->radiusRepulsion;
 }
 
-float Swarm::getOrientationRadius()
-{
+float Swarm::getOrientationRadius() {
     return this->radiusOrientation;
 }
 
-float Swarm::getAttractionRadius()
-{
+float Swarm::getAttractionRadius() {
     return this->radiusAttraction;
 }
 
-void Swarm::setRepulsionRadius(float value)
-{
+void Swarm::setRepulsionRadius(float value) {
     this->radiusRepulsion = value;
 }
 
-void Swarm::setOrientationRadius(float value)
-{
+void Swarm::setOrientationRadius(float value) {
     this->radiusOrientation = value;
 }
 
-void Swarm::setAttractionRadius(float value)
-{
+void Swarm::setAttractionRadius(float value) {
     this->radiusAttraction = value;
 }
 
-float Swarm::getBlindAngle()
-{
+float Swarm::getBlindAngle() {
     return this->blindAngle;
 }
 
-float Swarm::getSpeed()
-{
+float Swarm::getSpeed() {
     return this->speed;
 }
 
-float Swarm::getMaxForce()
-{
+float Swarm::getMaxForce() {
     return this->maxForce;
 }
 
-void Swarm::setBlindAngle(float value)
-{
+void Swarm::setBlindAngle(float value) {
     this->blindAngle = value;
 }
 
-void Swarm::setSpeed(float value)
-{
+void Swarm::setSpeed(float value) {
     this->speed = value;
 }
 
-void Swarm::setMaxForce(float value)
-{
+void Swarm::setMaxForce(float value) {
     this->maxForce = value;
 }
 
-int Swarm::getSwarmMode()
-{
+int Swarm::getSwarmMode() {
     return this->swarmMode;
 }
 
-void Swarm::setSwarmMode(int value)
-{
+void Swarm::setSwarmMode(int value) {
     this->swarmMode = value;
 }
 
-Triplet Swarm::getAveragePosition()
-{
+Triplet Swarm::getAveragePosition() {
     return this->averagePosition;
 }
 
-void Swarm::addAgents()
-{
-    for (int i = 0; i < MAX_SIZE; ++i)
-    {
+void Swarm::addAgents() {
+    for (int i = 0; i < MAX_SIZE; ++i) {
         Agent agent;
         agents.push_back(agent);
     }
 }
 
-void Swarm::resetAll()
-{
+void Swarm::resetAll() {
     agents.erase(agents.begin(), agents.end());
 
-    for (int i = 0; i < MAX_SIZE; ++i)
-    {
+    for (int i = 0; i < MAX_SIZE; ++i) {
         Agent agent;
         agents.push_back(agent);
     }
 }
 
-void Swarm::resetAttractors()
-{
+void Swarm::resetAttractors() {
     attractors.erase(attractors.begin(), attractors.end());
 }
 
 
-void Swarm::addAttractor(int pitch, int tone = -1)
-{
+void Swarm::addAttractor(int pitch, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO, int tone = -1) {
     Attractor attractor(pitch, tone);
     attractors.push_back(attractor);
+    setupDrawAttractors(VBO, EBO, VAO);
 }
 
-void Swarm::swarm()
-{
-    for (int i = 0, size = getSize(); i < size; ++i)
-    {
+void Swarm::swarm(float deltaTime) {
+    for (int i = 0, size = getSize(); i < size; ++i)     {
         agents[i].step(agents, radiusRepulsion, radiusOrientation, radiusAttraction, blindAngle, maxForce);
 
         float positionX = swarmMode == AVERAGE ? averagePosition.getX() + agents[i].getPosition().getX() : agents[i].getPosition().getX();
         float positionY = swarmMode == AVERAGE ? averagePosition.getY() + agents[i].getPosition().getY() : agents[i].getPosition().getY();
         float positionZ = swarmMode == AVERAGE ? averagePosition.getZ() + agents[i].getPosition().getZ() : agents[i].getPosition().getZ();
 
-        if (swarmMode == RANDOM)
-        {
-            if (swarmRand() < 2)
-            {
+        if (swarmMode == RANDOM) {
+            if (swarmRand() < 2) {
                 averagePosition.setX(positionX);
             }
-            if (swarmRand() < 2)
-            {
+            if (swarmRand() < 2) {
                 averagePosition.setY(positionY);
             }
-            if (swarmRand() < 2)
-            {
+            if (swarmRand() < 2) {
                 averagePosition.setZ(positionZ);
             }
 
@@ -203,34 +176,41 @@ void Swarm::swarm()
         averagePosition.setZ(positionZ);
     }
 
-    for (int i = 0, size = getSize(); i < size; ++i)
-    {
-        agents[i].move(speed, attractors);
+    for (int i = 0, size = getSize(); i < size; ++i) {
+        agents[i].move(speed, attractors, deltaTime);
     }
 
-    if (swarmMode == AVERAGE)
-    {
+    if (swarmMode == AVERAGE) {
         averagePosition.scalarDiv(getSize());
     }
 }
 
-void Swarm::drawAgents()
-{
-    for (int i = 0, size = getSize(); i < size; ++i)
-    {
+void Swarm::setupDrawAgents(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    agents.at(0).setupDraw(VBO, EBO, VAO);
+}
+
+void Swarm::setupDrawAttractors(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    attractors.at(0).setupDraw(VBO, EBO, VAO);
+}
+
+void Swarm::drawAgents(Shader shader) {
+    for (int i = 0, size = getSize(); i < size; ++i) {
+        glm::mat4 agentModel = glm::mat4(1.0f);
+        agents.at(i).transform(&agentModel);
+        shader.setMat4("model", agentModel);
         agents.at(i).draw();
     }
 }
 
-void Swarm::drawAttractors()
-{
-    if (getAttractorsCount() == 0)
-    {
+void Swarm::drawAttractors(Shader shader) {
+    if (getAttractorsCount() == 0) {
         return;
     }
 
-    for (int i = 0, size = getAttractorsCount(); i < size; ++i)
-    {
+    for (int i = 0, size = getAttractorsCount(); i < size; ++i) {
+        glm::mat4 attractorModel = glm::mat4(1.0f);
+        attractors.at(i).transform(&attractorModel);
+        shader.setMat4("model", attractorModel);
         attractors.at(i).draw();
     }
 }
