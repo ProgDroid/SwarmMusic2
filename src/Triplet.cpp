@@ -9,49 +9,41 @@
 
 #include <Triplet.h>
 
-const float TO_DEGREES = 57.295779524;
+const float TO_DEGREES = 57.295779524f;
 
-Triplet::Triplet()
-{
-    x = 0.0;
-    y = 0.0;
-    z = 0.0;
+Triplet::Triplet() {
+    x = 0.0f;
+    y = 0.0f;
+    z = 0.0f;
 }
 
-Triplet::Triplet(float X, float Y, float Z)
-{
+Triplet::Triplet(float X, float Y, float Z) {
     x = X;
     y = Y;
     z = Z;
 }
 
-float Triplet::getX()
-{
+float Triplet::getX() {
     return this->x;
 }
 
-float Triplet::getY()
-{
+float Triplet::getY() {
     return this->y;
 }
 
-float Triplet::getZ()
-{
+float Triplet::getZ() {
     return this->z;
 }
 
-void Triplet::setX(float value)
-{
+void Triplet::setX(float value) {
     x = value;
 }
 
-void Triplet::setY(float value)
-{
+void Triplet::setY(float value) {
     y = value;
 }
 
-void Triplet::setZ(float value)
-{
+void Triplet::setZ(float value) {
     z = value;
 }
 
@@ -60,20 +52,29 @@ void Triplet::setZ(float value)
  *
  * @return float
  */
-float Triplet::length()
-{
+float Triplet::length() {
     float length = sqrt((x * x) + (y * y) + (z * z));
     return length;
 }
 
-Triplet Triplet::operator+(Triplet vector)
-{
+/**
+ * Vector addition
+ *
+ * @param Triplet vector
+ * @return Triplet
+ */
+Triplet Triplet::operator+(Triplet vector) {
     Triplet triplet = Triplet((x + vector.x), (y + vector.y), (z + vector.z));
     return triplet;
 }
 
-Triplet Triplet::operator-(Triplet vector)
-{
+/**
+ * Vector subtraction
+ *
+ * @param Triplet vector
+ * @return Triplet
+ */
+Triplet Triplet::operator-(Triplet vector) {
     Triplet triplet = Triplet((x - vector.x), (y - vector.y), (z - vector.z));
     return triplet;
 }
@@ -84,8 +85,7 @@ Triplet Triplet::operator-(Triplet vector)
  * @param Triplet vector
  * @return float
  */
-float Triplet::operator*(Triplet vector)
-{
+float Triplet::operator*(Triplet vector) {
     return (x * vector.x) + (y * vector.y) + (z * vector.z);
 }
 
@@ -94,8 +94,7 @@ float Triplet::operator*(Triplet vector)
  *
  * @return void
  */
-void Triplet::scalarDiv(float scalar)
-{
+void Triplet::scalarDiv(float scalar) {
     x /= scalar;
     y /= scalar;
     z /= scalar;
@@ -106,8 +105,7 @@ void Triplet::scalarDiv(float scalar)
  *
  * @return void
  */
-void Triplet::scalarMul(float scalar)
-{
+void Triplet::scalarMul(float scalar) {
     x *= scalar;
     y *= scalar;
     z *= scalar;
@@ -120,12 +118,10 @@ void Triplet::scalarMul(float scalar)
  *
  * @return void
  */
-void Triplet::normalise()
-{
+void Triplet::normalise() {
     float magnitude = length();
 
-    if (magnitude > 0)
-    {
+    if (magnitude > 0) {
         scalarDiv(magnitude);
     }
 }
@@ -136,8 +132,7 @@ void Triplet::normalise()
  * @param Triplet b
  * @return float
  */
-float Triplet::distance(Triplet b)
-{
+float Triplet::distance(Triplet b) {
     Triplet distVector = b - *this;
     return distVector.length();
 }
@@ -148,28 +143,22 @@ float Triplet::distance(Triplet b)
  * @param Triplet b
  * @return float
  */
-float Triplet::angle(Triplet b)
-{
+float Triplet::angle(Triplet b) {
     float magnitude  = length();
     float magnitudeB = b.length();
 
-    if (magnitude > 0 && magnitudeB > 0)
-    {
+    if (magnitude > 0 && magnitudeB > 0) {
         float dotProduct = *this * b;
         float cosTheta = dotProduct / (magnitude * magnitudeB);
 
-        if (cosTheta <= -1)
-        {
-            return 180;
-        }
-
-        else if (cosTheta >= 1)
-        {
-            return 0.0;
+        if (cosTheta <= -1) {
+            return 180.0f;
+        } else if (cosTheta >= 1) {
+            return 0.0f;
         }
 
         return acos(cosTheta) * TO_DEGREES;
     }
 
-    return 0.0;
+    return 0.0f;
 }

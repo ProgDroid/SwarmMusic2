@@ -8,11 +8,15 @@
 #ifndef SWARM_H_
 #define SWARM_H_
 
+#include <glm/glm.hpp>
+#include <Shader.h>
+
 #include <Agent.h>
 #include <Attractor.h>
 #include <Triplet.h>
 
-class Swarm {
+class Swarm
+{
 private:
     std::vector<Agent> agents;
     std::vector<Attractor> attractors;
@@ -55,14 +59,16 @@ public:
     Triplet getAveragePosition();
 
     void addAgents();
-    void addAttractor(int pitch, int tone);
+    void addAttractor(int pitch, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO, int tone);
 
     void resetAll();
     void resetAttractors();
 
-    void swarm();
-    void drawAgents();
-    void drawAttractors();
+    void swarm(float deltaTime);
+    void setupDrawAgents(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void setupDrawAttractors(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void drawAgents(Shader shader);
+    void drawAttractors(Shader shader);
 };
 
 #endif

@@ -8,9 +8,12 @@
 #ifndef ATTRACTOR_H_
 #define ATTRACTOR_H_
 
+#include <glm/glm.hpp>
+
 #include <Triplet.h>
 
-class Attractor {
+class Attractor
+{
 private:
     Triplet position;
     Triplet colour;
@@ -24,6 +27,8 @@ public:
 
     Triplet getPosition();
 
+    void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void transform(glm::mat4 *attractorModel);
     void draw();
 };
 
