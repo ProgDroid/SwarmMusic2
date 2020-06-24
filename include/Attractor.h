@@ -26,6 +26,7 @@ public:
     Attractor(int pitch, int givenTone);
 
     Triplet getPosition();
+    Triplet getColour();
 
     void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
     void transform(glm::mat4 *attractorModel);

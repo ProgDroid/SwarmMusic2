@@ -30,17 +30,28 @@ private:
     Triplet position;  // random
     Triplet direction; // also random, always needs to be normalised
 
-    Triplet acceleration = Triplet(0.0, 0.0, 0.0);
+    Triplet acceleration = Triplet(0.0f, 0.0f, 0.0f);
     Triplet BLUE         = Triplet(BLUE_R, BLUE_G, BLUE_B);
     Triplet RED          = Triplet(RED_R, RED_G, RED_B);
     Triplet WHITE        = Triplet(DEFAULT_WHITE, DEFAULT_WHITE, DEFAULT_WHITE);
-    Triplet colour       = Triplet(0.0, 0.0, 0.0);
+    Triplet colour       = Triplet(0.0f, 0.0f, 0.0f);
+    Triplet oldColour    = Triplet(0.0f, 0.0f, 0.0f);
     Triplet MIN          = Triplet(-CUBE_HALF_SIZE, -CUBE_HALF_SIZE, -CUBE_HALF_SIZE);
     Triplet MAX          = Triplet(CUBE_HALF_SIZE, CUBE_HALF_SIZE, CUBE_HALF_SIZE);
+
+    int  colourSwapTime  = 0;
+
+    glm::quat rotationBetweenVectors(glm::vec3 start, glm::vec3 dest);
 public:
     Agent();
 
     Triplet getPosition();
+    Triplet getColour();
+    Triplet getOldColour();
+    void setOldColour(Triplet value);
+
+    int getColourSwapTime();
+    void setColourSwapTime(int value);
 
     void setColour(int colourCount);
     void computeChange(Triplet newDirection, float count, Triplet direction, float maxForce);
@@ -50,7 +61,7 @@ public:
     Triplet attraction(std::vector<Agent> &agents, float radiusOrientation, float radiusAttraction, float blindAngle, float maxForce);
     Triplet bounding();
 
-    void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void setupDraw(unsigned int *VBO, unsigned int *normalVBO, unsigned int *EBO, unsigned int *VAO);
     void transform(glm::mat4 *agentModel);
     void draw();
     void move(float speed, std::vector<Attractor> attractors, float deltaTime);

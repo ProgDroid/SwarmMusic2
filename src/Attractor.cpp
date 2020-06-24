@@ -73,6 +73,10 @@ Triplet Attractor::getPosition() {
     return this->position;
 }
 
+Triplet Attractor::getColour() {
+    return this->colour;
+}
+
 /**
  * Setup sphere drawing
  *
@@ -98,9 +102,11 @@ void Attractor::setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VA
             vertices.push_back(x);
             vertices.push_back(y);
             vertices.push_back(z);
-            vertices.push_back(colour.getX());
-            vertices.push_back(colour.getY());
-            vertices.push_back(colour.getZ());
+
+            glm::vec3 normal = glm::normalize(glm::vec3(x, y, z));
+            vertices.push_back(normal.x);
+            vertices.push_back(normal.y);
+            vertices.push_back(normal.z);
         }
     }
 
@@ -131,7 +137,7 @@ void Attractor::setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VA
 
     glBindVertexArray(*VAO);
 
-    // vertices and colour
+    // vertices and normals
     glBindBuffer(GL_ARRAY_BUFFER, *VBO);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
