@@ -65,7 +65,7 @@ public:
     void resetAttractors();
 
     void swarm(float deltaTime);
-    void setupDrawAgents(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    void setupDrawAgents(unsigned int *VBO, unsigned int *normalVBO, unsigned int *EBO, unsigned int *VAO);
     void setupDrawAttractors(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
     void drawAgents(Shader shader);
     void drawAttractors(Shader shader);

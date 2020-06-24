@@ -142,7 +142,6 @@ void Swarm::resetAttractors() {
     attractors.erase(attractors.begin(), attractors.end());
 }
 
-
 void Swarm::addAttractor(int pitch, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO, int tone = -1) {
     Attractor attractor(pitch, tone);
     attractors.push_back(attractor);
@@ -185,8 +184,8 @@ void Swarm::swarm(float deltaTime) {
     }
 }
 
-void Swarm::setupDrawAgents(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
-    agents.at(0).setupDraw(VBO, EBO, VAO);
+void Swarm::setupDrawAgents(unsigned int *VBO, unsigned int *normalVBO, unsigned int *EBO, unsigned int *VAO) {
+    agents.at(0).setupDraw(VBO, normalVBO, EBO, VAO);
 }
 
 void Swarm::setupDrawAttractors(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
@@ -197,7 +196,31 @@ void Swarm::drawAgents(Shader shader) {
     for (int i = 0, size = getSize(); i < size; ++i) {
         glm::mat4 agentModel = glm::mat4(1.0f);
         agents.at(i).transform(&agentModel);
+
+        Triplet agentColour    = agents.at(i).getColour();
+        Triplet agentOldColour = agents.at(i).getOldColour();
+
+        glm::vec3 agentColourVec    = glm::vec3(agentColour.getX(), agentColour.getY(), agentColour.getZ());
+        glm::vec3 agentOldColourVec = glm::vec3(agentOldColour.getX(), agentOldColour.getY(), agentOldColour.getZ());
+
+        glm::vec3 objColour = agentColourVec;
+
+        if (agentColourVec.x != agentOldColourVec.x) {
+            int swapTime = agents.at(i).getColourSwapTime();
+            objColour = glm::mix(agentOldColourVec, agentColourVec, (swapTime / 100.0f));
+            if (swapTime == 100) {
+                swapTime = -1;
+                agents.at(i).setOldColour(agentColour);
+            }
+            agents.at(i).setColourSwapTime(swapTime + 1);
+        }
+
         shader.setMat4("model", agentModel);
+        shader.setVec3("material.ambient", objColour);
+        shader.setVec3("material.diffuse", objColour);
+        shader.setVec3("material.specular", glm::vec3(0.25f, 0.25f, 0.25f));
+        shader.setFloat("material.shininess", 32.0f);
+
         agents.at(i).draw();
     }
 }
@@ -210,7 +233,13 @@ void Swarm::drawAttractors(Shader shader) {
     for (int i = 0, size = getAttractorsCount(); i < size; ++i) {
         glm::mat4 attractorModel = glm::mat4(1.0f);
         attractors.at(i).transform(&attractorModel);
+
         shader.setMat4("model", attractorModel);
+        shader.setVec3("material.ambient", glm::vec3(attractors.at(i).getColour().getX(), attractors.at(i).getColour().getY(), attractors.at(i).getColour().getZ()));
+        shader.setVec3("material.diffuse", glm::vec3(attractors.at(i).getColour().getX(), attractors.at(i).getColour().getY(), attractors.at(i).getColour().getZ()));
+        shader.setVec3("material.specular", glm::vec3(0.25f, 0.25f, 0.25f));
+        shader.setFloat("material.shininess", 32.0f);
+
         attractors.at(i).draw();
     }
 }

@@ -399,15 +399,15 @@ void setProperties() {
  */
 void setupWireCube(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     // cube vertices
-    float vertices[] = {     // colour
-        -1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f
+    float vertices[] = {
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
     };
 
     unsigned int indices[] = {
@@ -438,11 +438,58 @@ void setupWireCube(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
+}
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+/**
+ * Setup light source
+ *
+ * @return void
+ */
+void setupLightSource(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    // cube vertices
+    float vertices[] = {
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+    };
+
+    unsigned int indices[] = {
+        0, 1,
+        1, 3,
+        3, 2,
+        2, 0,
+        0, 4,
+        1, 5,
+        2, 6,
+        3, 7,
+        4, 5,
+        5, 7,
+        7, 6,
+        6, 4,
+    };
+
+    glGenBuffers(1, VBO);
+    glGenBuffers(1, EBO);
+    glGenVertexArrays(1, VAO);
+
+    glBindVertexArray(*VAO);
+
+    // vertices and colour
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(0);
 }
 
 void processInput(GLFWwindow* window) {
@@ -638,7 +685,7 @@ int main() {
 
     if (!glfwInit()) {
         glfwTerminate();
-        std::exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -649,14 +696,14 @@ int main() {
     if (window == NULL) {
         std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();
-        std::exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     glfwMakeContextCurrent(window);
     glfwGetWindowSize(window, &width, &height);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
-        std::exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     glViewport(0, 0, width, height);
 
@@ -665,6 +712,8 @@ int main() {
     float cap = 1.0f / glfwGetVideoMode(glfwGetPrimaryMonitor())->refreshRate;
 
     Shader shader("./shaders/test.vs", "./shaders/test.fs");
+    Shader shaderLight("./shaders/light.vs", "./shaders/light.fs");
+    Shader shaderLightSource("./shaders/lightSource.vs", "./shaders/lightSource.fs");
 
     // UI
     struct nk_glfw glfw = {0};
@@ -678,12 +727,25 @@ int main() {
     glm::mat4 cubeModel = glm::mat4(1.0f);
     cubeModel = glm::scale(cubeModel, glm::vec3(400.0f, 400.0f, 400.0f));
 
-    unsigned int agentVBO, agentEBO, agentVAO;
-    swarm.setupDrawAgents(&agentVBO, &agentEBO, &agentVAO);
+    unsigned int lightVBO, lightEBO, lightVAO;
+    setupLightSource(&lightVBO, &lightEBO, &lightVAO);
+    glm::mat4 lightModel  = glm::mat4(1.0f);
+    glm::vec3 lightPos    = glm::vec3(0.0f, 420.0f, 0.0f);
+
+    float lightAmbient  = 0.2f;
+    float lightDiffuse  = 0.75f;
+    float lightSpecular = 1.0f;
+
+    lightModel = glm::translate(lightModel, lightPos);
+    lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+
+    unsigned int agentVBO, agentNormalVBO, agentEBO, agentVAO;
+    swarm.setupDrawAgents(&agentVBO, &agentNormalVBO, &agentEBO, &agentVAO);
 
     unsigned int attractorVBO, attractorEBO, attractorVAO;
 
     std::thread soundThread(music);
+    soundThread.detach();
 
 	while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -695,7 +757,7 @@ int main() {
         if (deltaSum > 1.0 / UPDATE_RATE) {
             fps = frameCount / deltaSum;
             frameCount = 0;
-            deltaSum = 0;
+            deltaSum   = 0;
         }
 
         glfwGetWindowSize(window, &width, &height);
@@ -709,9 +771,8 @@ int main() {
 		glClearColor(OLIVE_BLACK, OLIVE_BLACK, OLIVE_BLACK, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.use();
-
         glm::mat4 view = glm::mat4(1.0f);
+
         view = glm::lookAt(glm::vec3(1500.0f * sin(theta * (PI / 180.0f)), 500.0f, 1500.0f * cos(theta * (PI / 180.0f))),
                            glm::vec3(0.0f, -80.0f, 0.0f),
                            glm::vec3(0.0f, 1.0f, 0.0f));
@@ -719,21 +780,46 @@ int main() {
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(45.0f), (float) width / (float) height, 0.1f, 2500.0f);
 
+        shaderLightSource.use();
+        shaderLightSource.setMat4("model", lightModel);
+        shaderLightSource.setMat4("view", view);
+        shaderLightSource.setMat4("projection", projection);
+
+        glBindVertexArray(lightVAO);
+        glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
+
+        shaderLight.use();
+        shaderLight.setMat4("view", view);
+        shaderLight.setMat4("projection", projection);
+
+        // for wire cube
+        shaderLight.setVec3("light.ambient",  glm::vec3(1.0f, 1.0f, 1.0f));
+        shaderLight.setVec3("light.diffuse",  glm::vec3(1.0f, 1.0f, 1.0f));
+        shaderLight.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+        shaderLight.setVec3("light.position", lightPos);
+
         // draw cube
         glBindVertexArray(VAO);
 
-        shader.setMat4("model", cubeModel);
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
+        shaderLight.setMat4("model", cubeModel);
+        shaderLight.setVec3("material.ambient",  glm::vec3(0.02f, 0.02f, 0.02f));
+        shaderLight.setVec3("material.diffuse",  glm::vec3(0.01f, 0.01f, 0.01f));
+        shaderLight.setVec3("material.specular", glm::vec3(0.4f, 0.4f, 0.4f));
+        shaderLight.setFloat("material.shininess", 0.078125f * 128);
 
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
 
+        // for agents and attractors
+        shaderLight.setVec3("light.ambient",  glm::vec3(lightAmbient, lightAmbient, lightAmbient));
+        shaderLight.setVec3("light.diffuse",  glm::vec3(lightDiffuse, lightDiffuse, lightDiffuse));
+        shaderLight.setVec3("light.specular", glm::vec3(lightSpecular, lightSpecular, lightSpecular));
+
         // draw agents
         glBindVertexArray(agentVAO);
-        swarm.drawAgents(shader);
+        swarm.drawAgents(shaderLight);
 
         glBindVertexArray(attractorVAO);
-        swarm.drawAttractors(shader);
+        swarm.drawAttractors(shaderLight);
 
         glBindVertexArray(0);
 
@@ -761,6 +847,7 @@ int main() {
 
     glDeleteVertexArrays(1, &agentVAO);
     glDeleteBuffers(1, &agentEBO);
+    glDeleteBuffers(1, &agentNormalVBO);
     glDeleteBuffers(1, &agentVBO);
 
     glDeleteVertexArrays(1, &attractorVAO);
@@ -769,5 +856,5 @@ int main() {
 
 	nk_glfw3_shutdown(&glfw);
 	glfwTerminate();
-    std::exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
