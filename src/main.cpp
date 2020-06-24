@@ -442,56 +442,6 @@ void setupWireCube(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     glEnableVertexAttribArray(0);
 }
 
-/**
- * Setup light source
- *
- * @return void
- */
-void setupLightSource(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
-    // cube vertices
-    float vertices[] = {
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f,  1.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f,  1.0f,
-    };
-
-    unsigned int indices[] = {
-        0, 1,
-        1, 3,
-        3, 2,
-        2, 0,
-        0, 4,
-        1, 5,
-        2, 6,
-        3, 7,
-        4, 5,
-        5, 7,
-        7, 6,
-        6, 4,
-    };
-
-    glGenBuffers(1, VBO);
-    glGenBuffers(1, EBO);
-    glGenVertexArrays(1, VAO);
-
-    glBindVertexArray(*VAO);
-
-    // vertices and colour
-    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(0);
-}
-
 void processInput(GLFWwindow* window) {
     // LEFT
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
@@ -728,7 +678,8 @@ int main() {
     cubeModel = glm::scale(cubeModel, glm::vec3(400.0f, 400.0f, 400.0f));
 
     unsigned int lightVBO, lightEBO, lightVAO;
-    setupLightSource(&lightVBO, &lightEBO, &lightVAO);
+    // light source cube
+    setupWireCube(&lightVBO, &lightEBO, &lightVAO);
     glm::mat4 lightModel  = glm::mat4(1.0f);
     glm::vec3 lightPos    = glm::vec3(0.0f, 420.0f, 0.0f);
 
