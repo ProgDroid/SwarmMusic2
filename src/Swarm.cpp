@@ -38,7 +38,7 @@ float swarmRand() {
     return (float)distribution(generator);
 }
 
-Swarm::Swarm() {
+Swarm::Swarm() : averagePosition(Triplet(0.0f, 0.0f, 0.0f)) {
     agents.reserve(MAX_SIZE);
     attractors.reserve(MAX_ATTRACTORS);
     addAgents();
@@ -50,27 +50,25 @@ Swarm::Swarm() {
     speed             = 30.5f;
     maxForce          = 30.7f;
     swarmMode         = RANDOM;
-
-    Triplet averagePosition(0.0, 0.0, 0.0);
 }
 
-int Swarm::getSize() {
+int Swarm::getSize() const{
     return this->agents.size();
 }
 
-int Swarm::getAttractorsCount() {
+int Swarm::getAttractorsCount() const {
     return this->attractors.size();
 }
 
-float Swarm::getRepulsionRadius() {
+float Swarm::getRepulsionRadius() const {
     return this->radiusRepulsion;
 }
 
-float Swarm::getOrientationRadius() {
+float Swarm::getOrientationRadius() const {
     return this->radiusOrientation;
 }
 
-float Swarm::getAttractionRadius() {
+float Swarm::getAttractionRadius() const {
     return this->radiusAttraction;
 }
 
@@ -86,15 +84,15 @@ void Swarm::setAttractionRadius(float value) {
     this->radiusAttraction = value;
 }
 
-float Swarm::getBlindAngle() {
+float Swarm::getBlindAngle() const {
     return this->blindAngle;
 }
 
-float Swarm::getSpeed() {
+float Swarm::getSpeed() const {
     return this->speed;
 }
 
-float Swarm::getMaxForce() {
+float Swarm::getMaxForce() const {
     return this->maxForce;
 }
 
@@ -110,7 +108,7 @@ void Swarm::setMaxForce(float value) {
     this->maxForce = value;
 }
 
-int Swarm::getSwarmMode() {
+int Swarm::getSwarmMode() const {
     return this->swarmMode;
 }
 
@@ -118,7 +116,7 @@ void Swarm::setSwarmMode(int value) {
     this->swarmMode = value;
 }
 
-Triplet Swarm::getAveragePosition() {
+Triplet Swarm::getAveragePosition() const {
     return this->averagePosition;
 }
 

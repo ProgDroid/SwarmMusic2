@@ -34,29 +34,29 @@ private:
 public:
     Swarm();
 
-    int getSize();
-    int getAttractorsCount();
+    int getSize() const;
+    int getAttractorsCount() const;
 
-    float getRepulsionRadius();
-    float getOrientationRadius();
-    float getAttractionRadius();
+    float getRepulsionRadius() const;
+    float getOrientationRadius() const;
+    float getAttractionRadius() const;
 
     void setRepulsionRadius(float value);
     void setOrientationRadius(float value);
     void setAttractionRadius(float value);
 
-    float getBlindAngle();
-    float getSpeed();
-    float getMaxForce();
+    float getBlindAngle() const;
+    float getSpeed() const;
+    float getMaxForce() const;
 
     void setBlindAngle(float value);
     void setSpeed(float value);
     void setMaxForce(float value);
 
-    int getSwarmMode();
+    int getSwarmMode() const;
     void setSwarmMode(int value);
 
-    Triplet getAveragePosition();
+    Triplet getAveragePosition() const;
 
     void addAgents();
     void addAttractor(int pitch, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO, int tone);

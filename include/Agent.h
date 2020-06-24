@@ -39,33 +39,33 @@ private:
     Triplet MIN          = Triplet(-CUBE_HALF_SIZE, -CUBE_HALF_SIZE, -CUBE_HALF_SIZE);
     Triplet MAX          = Triplet(CUBE_HALF_SIZE, CUBE_HALF_SIZE, CUBE_HALF_SIZE);
 
-    int  colourSwapTime  = 0;
+    int colourSwapTime   = 0;
 
-    glm::quat rotationBetweenVectors(glm::vec3 start, glm::vec3 dest);
+    static glm::quat rotationBetweenVectors(glm::vec3 start, glm::vec3 dest);
 public:
     Agent();
 
-    Triplet getPosition();
-    Triplet getColour();
-    Triplet getOldColour();
+    Triplet getPosition() const;
+    Triplet getColour() const;
+    Triplet getOldColour() const;
     void setOldColour(Triplet value);
 
-    int getColourSwapTime();
+    int getColourSwapTime() const;
     void setColourSwapTime(int value);
 
     void setColour(int colourCount);
-    void computeChange(Triplet newDirection, float count, Triplet direction, float maxForce);
+    void computeChange(Triplet newDirection, float count, Triplet direction, float maxForce) const;
 
     Triplet repulsion(std::vector<Agent> &agents, float radiusRepulsion,float blindAngle, float maxForce);
     Triplet orientation(std::vector<Agent> &agents, float radiusRepulsion, float radiusOrientation, float blindAngle, float maxForce);
     Triplet attraction(std::vector<Agent> &agents, float radiusOrientation, float radiusAttraction, float blindAngle, float maxForce);
-    Triplet bounding();
+    Triplet bounding() const;
 
-    void setupDraw(unsigned int *VBO, unsigned int *normalVBO, unsigned int *EBO, unsigned int *VAO);
+    static void setupDraw(unsigned int *VBO, unsigned int *normalVBO, unsigned int *EBO, unsigned int *VAO);
     void transform(glm::mat4 *agentModel);
-    void draw();
+    static void draw();
     void move(float speed, std::vector<Attractor> attractors, float deltaTime);
-    void step(std::vector<Agent> &agents, float radiusRepulsion, float radiradiusOrientationusO, float radiusAttraction, float angle, float maxForce);
+    void step(std::vector<Agent> &agents, float radiusRepulsion, float radiusOrientation, float radiusAttraction, float angle, float maxForce);
 };
 
 #endif

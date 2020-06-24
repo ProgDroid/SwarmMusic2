@@ -55,15 +55,15 @@ Agent::Agent() {
     direction = Triplet((agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE, (agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE, (agentRand() - CUBE_HALF_SIZE) / CUBE_HALF_SIZE);
 }
 
-Triplet Agent::getPosition() {
+ Triplet Agent::getPosition() const {
     return this->position;
 }
 
-Triplet Agent::getColour() {
+Triplet Agent::getColour() const {
     return this->colour;
 }
 
-Triplet Agent::getOldColour() {
+Triplet Agent::getOldColour() const {
     return this->oldColour;
 }
 
@@ -71,7 +71,7 @@ void Agent::setOldColour(Triplet value) {
     oldColour = value;
 }
 
-int Agent::getColourSwapTime() {
+int Agent::getColourSwapTime() const {
     return this->colourSwapTime;
 }
 
@@ -96,7 +96,7 @@ void Agent::setColour(int colourCount) {
     }
 }
 
-void Agent::computeChange(Triplet newDirection, float count, Triplet direction, float maxForce) {
+void Agent::computeChange(Triplet newDirection, float count, Triplet direction, float maxForce) const {
     newDirection.scalarDiv(count);
     newDirection.normalise();
     newDirection = newDirection - direction;
@@ -255,7 +255,7 @@ Triplet Agent::attraction(
  * @param Triplet max
  * @return Triplet
  */
-Triplet Agent::bounding() {
+Triplet Agent::bounding() const {
     Triplet vector(0.0, 0.0, 0.0);
 
     if (position.getX() <= MIN.getX()) {

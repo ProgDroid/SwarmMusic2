@@ -722,11 +722,9 @@ int main() {
 		glClearColor(OLIVE_BLACK, OLIVE_BLACK, OLIVE_BLACK, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = glm::mat4(1.0f);
-
-        view = glm::lookAt(glm::vec3(1500.0f * sin(theta * (PI / 180.0f)), 500.0f, 1500.0f * cos(theta * (PI / 180.0f))),
-                           glm::vec3(0.0f, -80.0f, 0.0f),
-                           glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(glm::vec3(1500.0f * sin(theta * (PI / 180.0f)), 500.0f, 1500.0f * cos(theta * (PI / 180.0f))),
+                            glm::vec3(0.0f, -80.0f, 0.0f),
+                            glm::vec3(0.0f, 1.0f, 0.0f));
 
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(45.0f), (float) width / (float) height, 0.1f, 2500.0f);

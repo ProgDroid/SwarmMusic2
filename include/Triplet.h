@@ -15,28 +15,28 @@ private:
 
 public:
     Triplet();
-    Triplet(float a, float b, float c);
+    Triplet(float X, float Y, float Z);
     
-    float getX();
-    float getY();
-    float getZ();
+    float getX() const;
+    float getY() const;
+    float getZ() const;
 
-    void setX(float X);
-    void setY(float Y);
-    void setZ(float Z);
+    void setX(float value);
+    void setY(float value);
+    void setZ(float value);
 
-    float length();
+    float length() const;
 
-    Triplet operator+(Triplet v);
-    Triplet operator-(Triplet v);
-    float operator*(Triplet v);
+    Triplet operator+(Triplet vector);
+    Triplet operator-(Triplet vector);
+    float operator*(Triplet vector) const;
 
     void scalarDiv(float scalar);
     void scalarMul(float scalar);
     void normalise();
 
-    float distance(Triplet b);
-    float angle(Triplet b);
+    float distance(Triplet b) const;
+    float angle(Triplet b) const;
 };
 
 #endif
