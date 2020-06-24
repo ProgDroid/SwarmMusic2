@@ -17,18 +17,4 @@ jobs:
         uses: deep5050/cppcheck-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
-
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    # - name: LD_PRELOAD
-    #   run: export LD_PRELOAD=$LD_PRELOAD:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
-    # - name: LD_LIBRARY_PATH
-    #   run: LD_LIBRARY_PATH=/lib:.
-    - name: Setup OpenGL
-      uses: openrndr/setup-opengl@v1
-    - name: make
-      run: make
+          exclude_check: ext/, stk-4.6.0
