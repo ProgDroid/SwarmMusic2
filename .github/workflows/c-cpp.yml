@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: cppcheck
-        uses: deep5050/cppcheck-action@master
+        uses: ProgDroid/cppcheck-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
-          exclude_check: ext/, stk-4.6.0
+          exclude_check: ./ext/** -i ./stk-4.6.0/** -i ./src/glad.c
