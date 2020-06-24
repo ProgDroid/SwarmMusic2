@@ -1,4 +1,4 @@
-name: CppCheck
+name: cppcheck
 
 on:
   push:
