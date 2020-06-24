@@ -22,15 +22,16 @@ private:
     int strength;
     int mode;
 
+    static Triplet initPosition(int pitch);
 public:
     Attractor(int pitch, int givenTone);
 
-    Triplet getPosition();
-    Triplet getColour();
+    Triplet getPosition() const;
+    Triplet getColour() const;
 
-    void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
+    static void setupDraw(unsigned int *VBO, unsigned int *EBO, unsigned int *VAO);
     void transform(glm::mat4 *attractorModel);
-    void draw();
+    static void draw();
 };
 
 #endif

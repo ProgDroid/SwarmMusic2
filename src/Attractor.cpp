@@ -45,16 +45,9 @@ float attractRand() {
     return (float) distribution(generator);
 }
 
-Attractor::Attractor(int pitch, int givenTone) {
+Attractor::Attractor(int pitch, int givenTone) : position(initPosition(pitch)) {
     tone = givenTone;
     mode = SCALES;
-
-    float xCoord  = (float) pitch - 72;
-          xCoord *= 800;
-          xCoord /= 24;
-          xCoord -= 400;
-
-    position = Triplet(xCoord, attractRand() - CUBE_HALF_SIZE, attractRand() - CUBE_HALF_SIZE);
 
     if (tone == I || tone == V) {
         strength = 3;
@@ -69,11 +62,20 @@ Attractor::Attractor(int pitch, int givenTone) {
     colour = Triplet(MAUVE_R + modifier, MAUVE_G + modifier, MAUVE_B + modifier);
 }
 
-Triplet Attractor::getPosition() {
+Triplet Attractor::initPosition(int pitch) {
+    float xCoord  = (float) pitch - 72;
+          xCoord *= 800;
+          xCoord /= 24;
+          xCoord -= 400;
+
+    return Triplet(xCoord, attractRand() - CUBE_HALF_SIZE, attractRand() - CUBE_HALF_SIZE);
+}
+
+Triplet Attractor::getPosition() const {
     return this->position;
 }
 
-Triplet Attractor::getColour() {
+Triplet Attractor::getColour() const {
     return this->colour;
 }
 

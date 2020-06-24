@@ -23,15 +23,15 @@ Triplet::Triplet(float X, float Y, float Z) {
     z = Z;
 }
 
-float Triplet::getX() {
+float Triplet::getX() const {
     return this->x;
 }
 
-float Triplet::getY() {
+float Triplet::getY() const {
     return this->y;
 }
 
-float Triplet::getZ() {
+float Triplet::getZ() const {
     return this->z;
 }
 
@@ -52,7 +52,7 @@ void Triplet::setZ(float value) {
  *
  * @return float
  */
-float Triplet::length() {
+float Triplet::length() const {
     float length = sqrt((x * x) + (y * y) + (z * z));
     return length;
 }
@@ -85,7 +85,7 @@ Triplet Triplet::operator-(Triplet vector) {
  * @param Triplet vector
  * @return float
  */
-float Triplet::operator*(Triplet vector) {
+float Triplet::operator*(Triplet vector) const {
     return (x * vector.x) + (y * vector.y) + (z * vector.z);
 }
 
@@ -132,7 +132,7 @@ void Triplet::normalise() {
  * @param Triplet b
  * @return float
  */
-float Triplet::distance(Triplet b) {
+float Triplet::distance(Triplet b) const {
     Triplet distVector = b - *this;
     return distVector.length();
 }
@@ -143,7 +143,7 @@ float Triplet::distance(Triplet b) {
  * @param Triplet b
  * @return float
  */
-float Triplet::angle(Triplet b) {
+float Triplet::angle(Triplet b) const {
     float magnitude  = length();
     float magnitudeB = b.length();
 
