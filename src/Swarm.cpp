@@ -38,7 +38,7 @@ float swarmRand() {
     return (float)distribution(generator);
 }
 
-Swarm::Swarm() {
+Swarm::Swarm() : averagePosition(Triplet(0.0f, 0.0f, 0.0f)) {
     agents.reserve(MAX_SIZE);
     attractors.reserve(MAX_ATTRACTORS);
     addAgents();
@@ -50,8 +50,6 @@ Swarm::Swarm() {
     speed             = 30.5f;
     maxForce          = 30.7f;
     swarmMode         = RANDOM;
-
-    Triplet averagePosition(0.0, 0.0, 0.0);
 }
 
 int Swarm::getSize() const{
