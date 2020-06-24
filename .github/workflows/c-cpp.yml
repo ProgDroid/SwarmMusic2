@@ -13,9 +13,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: C++ code linter (clang-tidy and cppcheck)
-      uses: smay1613/cpp-linter-action@0.0.2
+    - name: cppcheck
+      uses: deep5050/cppcheck-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN}}
     - name: make
       run: make
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
