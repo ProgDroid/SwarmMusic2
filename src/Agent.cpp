@@ -90,7 +90,7 @@ void Agent::setColour(int colourCount) {
         return;
     }
 
-    if (/* colour.getX() != oldColour.getX() &&  */colourSwapTime == 0) {
+    if (colourSwapTime == 0) {
         oldColour = colour;
         colour    = colourCount > 0 ? BLUE : RED;
     }
