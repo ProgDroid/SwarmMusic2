@@ -23,9 +23,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v2
     # - name: LD_PRELOAD
     #   run: export LD_PRELOAD=$LD_PRELOAD:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
     # - name: LD_LIBRARY_PATH
     #   run: LD_LIBRARY_PATH=/lib:.
     - name: make
-      run: pwd
+      run: ls
