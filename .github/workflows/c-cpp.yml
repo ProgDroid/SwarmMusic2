@@ -17,4 +17,5 @@ jobs:
         uses: ProgDroid/cppcheck-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
-          exclude_check: ./ext/** -i ./stk-4.6.0/** -i ./src/glad.c
+          exclude_check: ./ext -i ./stk-4.6.0 -i ./src/glad.c
+          force_language: c++
