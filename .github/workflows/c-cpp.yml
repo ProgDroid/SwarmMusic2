@@ -17,3 +17,5 @@ jobs:
       uses: smay1613/cpp-linter-action@0.0.2
     - name: make
       run: make
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
