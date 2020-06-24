@@ -1,0 +1,19 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ * ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: C++ code linter (clang-tidy and cppcheck)
+      uses: smay1613/cpp-linter-action@0.0.2
+    - name: make
+      run: make
