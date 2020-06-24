@@ -2,20 +2,30 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
 jobs:
+  cppcheck:
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: cppcheck
+        uses: deep5050/cppcheck-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN}}
+
   build:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: cppcheck
-      uses: deep5050/cppcheck-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN}}
+    - name: LD_PRELOAD
+      run: export LD_PRELOAD=$LD_PRELOAD:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+    - name: LD_LIBRARY_PATH
+      run: LD_LIBRARY_PATH=/lib:.
     - name: make
       run: make
