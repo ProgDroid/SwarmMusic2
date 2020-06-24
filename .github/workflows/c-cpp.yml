@@ -29,4 +29,4 @@ jobs:
     # - name: LD_LIBRARY_PATH
     #   run: LD_LIBRARY_PATH=/lib:.
     - name: make
-      run: ls
+      run: make
