@@ -28,5 +28,7 @@ jobs:
     #   run: export LD_PRELOAD=$LD_PRELOAD:/usr/lib/x86_64-linux-gnu/libstdc++.so.6
     # - name: LD_LIBRARY_PATH
     #   run: LD_LIBRARY_PATH=/lib:.
+    - name: Setup OpenGL
+      uses: openrndr/setup-opengl@v1
     - name: make
       run: make
