@@ -16,6 +16,6 @@ jobs:
     - name: C++ code linter (clang-tidy and cppcheck)
       uses: smay1613/cpp-linter-action@0.0.2
       with:
-        key: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: make
       run: make
