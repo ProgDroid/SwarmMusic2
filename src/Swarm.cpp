@@ -52,7 +52,7 @@ Swarm::Swarm() : averagePosition(Triplet(0.0f, 0.0f, 0.0f)) {
     swarmMode         = RANDOM;
 }
 
-int Swarm::getSize() const{
+int Swarm::getSize() const {
     return this->agents.size();
 }
 

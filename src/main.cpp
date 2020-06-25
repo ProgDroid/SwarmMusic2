@@ -16,6 +16,7 @@
 #include <thread>
 
 #include <Agent.h>
+#include <Scale.h>
 #include <Swarm.h>
 #include <Triplet.h>
 
@@ -56,23 +57,15 @@ const float CUBE_SIZE_HALF = 400.0;
 const float OLIVE_BLACK    = 0.23529411764;
 const float PI             = 3.14159265;
 const float UPDATE_RATE    = 4.0;
-const int DOOM             = 0;
-const int JAZZ             = 1;
-const int POP              = 2;
-const int METAL            = 3;
-const int PUNK             = 4;
-const int MAJOR            = 0;
-const int MINOR            = 1;
-const int PENTATONIC       = 2;
-const int BLUES            = 3;
-const int PENTATONIC_SIZE  = 5;
-const int BLUES_SIZE       = 6;
-const int MAJOR_SIZE       = 7;
-const int MINOR_SIZE       = 7;
-const int RANDOM           = 0;
-const int AVERAGE          = 1;
-const int C_MIDI_PITCH     = 72;
-const int LENGTH_FACTOR    = 250;
+const int   DOOM           = 0;
+const int   JAZZ           = 1;
+const int   POP            = 2;
+const int   METAL          = 3;
+const int   PUNK           = 4;
+const int   RANDOM         = 0;
+const int   AVERAGE        = 1;
+const int   C_MIDI_PITCH   = 72;
+const int   LENGTH_FACTOR  = 250;
 
 static float repulsionRadius   = 20.0f;
 static float orientationRadius = 50.0f;
@@ -125,53 +118,15 @@ void makeScale(int givenPitch, unsigned int *VBO, unsigned int *EBO, unsigned in
     int root      = givenPitch;
     int scaleType = scale;
 
-    // normalise root to make 2 octave scale
+    // normalise root to stay within cube
     if (root >= 84) {
         root -= 12;
     }
 
-    std::vector<int> intervals;
+    Scale attractorScale = Scale(root, scaleType);
 
-    // todo scales as objects?
-    if (scaleType == MAJOR) {
-        intervals.reserve(MAJOR_SIZE);
-        intervals.push_back(2);
-        intervals.push_back(2);
-        intervals.push_back(1);
-        intervals.push_back(2);
-        intervals.push_back(2);
-        intervals.push_back(2);
-        intervals.push_back(1);
-    } else if (scaleType == MINOR) {
-        intervals.reserve(MINOR_SIZE);
-        intervals.push_back(2);
-        intervals.push_back(1);
-        intervals.push_back(2);
-        intervals.push_back(2);
-        intervals.push_back(1);
-        intervals.push_back(2);
-        intervals.push_back(2);
-    } else if (scaleType == PENTATONIC) {
-        intervals.reserve(PENTATONIC_SIZE);
-        intervals.push_back(3);
-        intervals.push_back(2);
-        intervals.push_back(2);
-        intervals.push_back(3);
-        intervals.push_back(2);
-    } else if (scaleType == BLUES) {
-        intervals.reserve(BLUES_SIZE);
-        intervals.push_back(3);
-        intervals.push_back(2);
-        intervals.push_back(1);
-        intervals.push_back(1);
-        intervals.push_back(3);
-        intervals.push_back(2);
-    }
-
-    // 2 iterations over the intervals to make 2 octaves scale
-    for (int i = 0, size = intervals.size(); i < size * 2; ++i) {
-        int index = i % size;
-        swarm.addAttractor(root + intervals[index], VBO, EBO, VAO, index);
+    for (int i = 0, size = attractorScale.getPitches().size(); i < size; ++i) {
+        swarm.addAttractor(attractorScale.getPitches().at(i), VBO, EBO, VAO, attractorScale.getTones().at(i));
     }
 }
 
@@ -515,11 +470,11 @@ int tick(
 void playMusic() {
     // x coordinate determines pitch between C4=72 and C6=96,
     // for a range of 2 octaves
-    pitch = ((swarm.getAveragePosition().getX() + CUBE_SIZE_HALF) * 24) / (CUBE_SIZE_HALF * 2);
+    pitch = ((swarm.getAveragePosition().getX() + CUBE_SIZE_HALF) * 25) / (CUBE_SIZE_HALF * 2);
     if (pitch < 0) {
         pitch = 0;
-    } else if (pitch > 24) {
-        pitch = 24;
+    } else if (pitch > 25) {
+        pitch = 25;
     }
     pitch += 72;
 
