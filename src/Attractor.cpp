@@ -17,19 +17,21 @@
 #include <Attractor.h>
 #include <Triplet.h>
 
+#include <iostream>
+
 const float CUBE_HALF_SIZE = 400.0;
 const float MAUVE_R        = 0.75686274509;
 const float MAUVE_G        = 0.51372549019;
 const float MAUVE_B        = 0.62352941176;
 const float FREEFORM       = 0;
 const float SCALES         = 1;
-const float I              = 0;
-const float ii             = 1;
-const float iii            = 2;
-const float IV             = 3;
-const float V              = 4;
-const float vi             = 5;
-const float vii            = 6;
+const float I              = 1;
+const float ii             = 2;
+const float iii            = 3;
+const float IV             = 4;
+const float V              = 5;
+const float vi             = 6;
+const float vii            = 7;
 const float PI             = 3.14159265;
 
 /**
@@ -65,7 +67,7 @@ Attractor::Attractor(int pitch, int givenTone) : position(initPosition(pitch)) {
 Triplet Attractor::initPosition(int pitch) {
     float xCoord  = (float) pitch - 72;
           xCoord *= 800;
-          xCoord /= 24;
+          xCoord /= 25;
           xCoord -= 400;
 
     return Triplet(xCoord, attractRand() - CUBE_HALF_SIZE, attractRand() - CUBE_HALF_SIZE);
