@@ -123,10 +123,10 @@ void makeScale(int givenPitch, unsigned int *VBO, unsigned int *EBO, unsigned in
         root -= 12;
     }
 
-    Scale scale = Scale(root, scaleType);
+    Scale attractorScale = Scale(root, scaleType);
 
-    for (int i = 0, size = scale.getPitches().size(); i < size; ++i) {
-        swarm.addAttractor(scale.getPitches().at(i), VBO, EBO, VAO, scale.getTones().at(i));
+    for (int i = 0, size = attractorScale.getPitches().size(); i < size; ++i) {
+        swarm.addAttractor(attractorScale.getPitches().at(i), VBO, EBO, VAO, attractorScale.getTones().at(i));
     }
 }
 

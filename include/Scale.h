@@ -48,9 +48,6 @@ public:
 
     std::vector<int> getTones() const;
     void setTones(int type);
-
-    int getRoot() const;
-    int getType() const;
 };
 
 #endif

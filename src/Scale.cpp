@@ -49,11 +49,3 @@ void Scale::setTones(int type) {
         }
     }
 }
-
-int Scale::getRoot() const {
-    return this->root;
-}
-
-int Scale::getType() const {
-    return this->type;
-}
