@@ -199,6 +199,87 @@ void drawSwarmProperties(nk_context *context) {
     nk_end(context);
 }
 
+void picker(nk_context *context, std::vector<std::pair<std::string, int>> options, int *variable, std::string label) {
+    nk_layout_row_dynamic(context, 15, 1);
+    nk_label(context, label.c_str(), NK_TEXT_LEFT);
+    nk_layout_row_dynamic(context, 15, options.size());
+
+    for (int i = 0, size = options.size(); i < size; ++i) {
+        if (nk_option_label(context, options.at(i).first.c_str(), *variable == options.at(i).second)) *variable = options.at(i).second;
+    }
+}
+
+/**
+ * Draw pitch selector
+ *
+ * @param nk_context *context
+ *
+ * @return void
+ */
+void pitchSelector(nk_context *context) {
+    std::vector<const char *> pitches = {
+        "C4", "C#4", "D4", "D#4",
+        "E4", "F4", "F#4", "G4",
+        "G#4", "A4", "A#4", "B4",
+        "C5", "C#5", "D5", "D#5",
+        "E5", "F5", "F#5", "G5",
+        "G#5", "A5", "A#5", "B5",
+        "C6"
+    };
+
+    nk_layout_row_dynamic(context, 15, 1);
+    nk_label(context, "Selected Pitch:", NK_TEXT_LEFT);
+    if (nk_combo_begin_label(context, pitches[GUIpitch], nk_vec2(nk_widget_width(context), 197))) {
+        nk_layout_row_dynamic(context, 15, 1);
+        for (unsigned int i = 0; i < pitches.size(); ++i) {
+            // highlight pitch in use
+            context->style.contextual_button.normal      = i == GUIpitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45));
+            context->style.contextual_button.text_normal = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+            context->style.contextual_button.hover       = i == GUIpitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+            context->style.contextual_button.text_hover  = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+            if (nk_combo_item_label(context, pitches[i], NK_TEXT_LEFT)) {
+                GUIpitch = i;
+            }
+        }
+        nk_combo_end(context);
+    }
+}
+
+/**
+ * Draw mute button, styled if muted
+ *
+ * @param nk_context *context
+ *
+ * @return void
+ */
+void muteButton(nk_context *context) {
+    nk_layout_row_dynamic(context, 25, 1);
+
+    // style button if muted
+    context->style.button.normal      = mute ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
+    context->style.button.text_normal = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+    context->style.button.hover       = mute ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
+    context->style.button.text_hover  = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
+
+    if (nk_button_label(context, mute ? "Unmute" : "Mute")) {
+        mute = !mute;
+    }
+}
+
+/** Reset button style
+ *
+ * @param nk_context *context
+ *
+ * @return void
+ */
+void resetButtonStyle(nk_context *context) {
+    context->style.button.normal      = nk_style_item_color(nk_rgb(50, 50, 50));
+    context->style.button.text_normal = nk_rgb(175, 175, 175);
+    context->style.button.hover       = nk_style_item_color(nk_rgb(40, 40, 40));
+    context->style.button.text_hover  = nk_rgb(175, 175, 175);
+}
+
 /**
  * Draw the musical properties UI
  *
@@ -218,16 +299,18 @@ void drawMusicalProperties(nk_glfw *glfw, nk_context *context, unsigned int *VBO
             )
         ) {
         // style picker
-        nk_layout_row_dynamic(context, 15, 1);
-        nk_label(context, "Style:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(context, 15, 5);
-        if (nk_option_label(context, "DOOM",  style == DOOM))  style = DOOM;
-        if (nk_option_label(context, "Jazz",  style == JAZZ))  style = JAZZ;
-        if (nk_option_label(context, "Pop",   style == POP))   style = POP;
-        if (nk_option_label(context, "Metal", style == METAL)) style = METAL;
-        if (nk_option_label(context, "Punk",  style == PUNK))  style = PUNK;
+        std::vector<std::pair<std::string, int>> stylePicker {
+            {"DOOM", DOOM},
+            {"Jazz", JAZZ},
+            {"Pop", POP},
+            {"Metal", METAL},
+            {"Punk", PUNK}
+        };
 
-        // swarm mode picker
+        picker(context, stylePicker, &style, "Style:");
+
+        // swarm mode picker (won't use picker as this uses swarm.setSwarmMode)
+        // it's also not terribly long
         nk_layout_row_dynamic(context, 15, 1);
         nk_label(context, "Swarm Mode:", NK_TEXT_LEFT);
         nk_layout_row_dynamic(context, 15, 2);
@@ -235,48 +318,20 @@ void drawMusicalProperties(nk_glfw *glfw, nk_context *context, unsigned int *VBO
         if (nk_option_label(context, "Average", swarm.getSwarmMode() == AVERAGE)) swarm.setSwarmMode(AVERAGE);
 
         // pitch selector
-        std::vector<const char *> pitches = {
-            "C4", "C#4", "D4", "D#4",
-            "E4", "F4", "F#4", "G4",
-            "G#4", "A4", "A#4", "B4",
-            "C5", "C#5", "D5", "D#5",
-            "E5", "F5", "F#5", "G5",
-            "G#5", "A5", "A#5", "B5",
-            "C6"
-        };
-
-        nk_layout_row_dynamic(context, 15, 1);
-        nk_label(context, "Selected Pitch:", NK_TEXT_LEFT);
-        if (nk_combo_begin_label(context, pitches[GUIpitch], nk_vec2(nk_widget_width(context), 197))) {
-            nk_layout_row_dynamic(context, 15, 1);
-            for (unsigned int i = 0; i < pitches.size(); ++i) {
-                // highlight pitch in use
-                context->style.contextual_button.normal      = i == GUIpitch ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45));
-                context->style.contextual_button.text_normal = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
-                context->style.contextual_button.hover       = i == GUIpitch ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
-                context->style.contextual_button.text_hover  = i == GUIpitch ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
-
-                if (nk_combo_item_label(context, pitches[i], NK_TEXT_LEFT)) {
-                    GUIpitch = i;
-                }
-            }
-            nk_combo_end(context);
-        }
+        pitchSelector(context);
 
         // scale picker
-        nk_layout_row_dynamic(context, 15, 1);
-        nk_label(context, "Scale:", NK_TEXT_LEFT);
-        nk_layout_row_dynamic(context, 15, 4);
-        if (nk_option_label(context, "Major",      scale == MAJOR))      scale = MAJOR;
-        if (nk_option_label(context, "minor",      scale == MINOR))      scale = MINOR;
-        if (nk_option_label(context, "Pentatonic", scale == PENTATONIC)) scale = PENTATONIC;
-        if (nk_option_label(context, "Blues",      scale == BLUES))      scale = BLUES;
+        std::vector<std::pair<std::string, int>> scalePicker {
+            {"Major", MAJOR},
+            {"minor", MINOR},
+            {"Pentatonic", PENTATONIC},
+            {"Blues", BLUES}
+        };
+
+        picker(context, scalePicker, &scale, "Scale:");
 
         // reset style for following buttons
-        context->style.button.normal      = nk_style_item_color(nk_rgb(50, 50, 50));
-        context->style.button.text_normal = nk_rgb(175, 175, 175);
-        context->style.button.hover       = nk_style_item_color(nk_rgb(40, 40, 40));
-        context->style.button.text_hover  = nk_rgb(175, 175, 175);
+        resetButtonStyle(context);
 
         // add attractor
         nk_layout_row_dynamic(context, 20, 2);
@@ -289,17 +344,8 @@ void drawMusicalProperties(nk_glfw *glfw, nk_context *context, unsigned int *VBO
             makeScale((int) GUIpitch + C_MIDI_PITCH, VBO, EBO, VAO);
         }
 
-        // mute
-        nk_layout_row_dynamic(context, 25, 1);
-        // style button if muted
-        context->style.button.normal      = mute ? nk_style_item_color(nk_rgb(255, 90, 95)) : nk_style_item_color(nk_rgb(45, 45, 45)); // 193, 131, 159?
-        context->style.button.text_normal = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
-        context->style.button.hover       = mute ? nk_style_item_color(nk_rgb(245, 80, 85)) : nk_style_item_color(nk_rgb(40, 40, 40));
-        context->style.button.text_hover  = mute ? nk_rgb(225, 225, 225) : nk_rgb(175, 175, 175);
-
-        if (nk_button_label(context, mute ? "Unmute" : "Mute")) {
-            mute = !mute;
-        }
+        // mute (will override button style if muted)
+        muteButton(context);
     }
     nk_end(context);
 }
@@ -346,9 +392,9 @@ void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int 
 
     drawMusicalProperties(glfw, context, VBO, EBO, VAO);
 
-    drawFPSDisplay(glfw, context);
-
     context->style.window.fixed_background.data.color.a = 0;
+
+    drawFPSDisplay(glfw, context);
 }
 
 /**
