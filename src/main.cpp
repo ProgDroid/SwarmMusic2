@@ -163,19 +163,13 @@ void slider(nk_context *context, const char *label, float min, float max, float 
 }
 
 /**
- * Draw the UI elements
+ * Draw the swarm properties UI
  *
- * @param nk_glfw *glfw
  * @param nk_context *context
- * @param unsigned int *VBO
- * @param unsigned int *EBO
- * @param unsigned int *VAO
  *
  * @return void
  */
-void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
-    // to control the swarm properties
-    context->style.window.fixed_background.data.color.a = 255;
+void drawSwarmProperties(nk_context *context) {
     if (nk_begin(context,
                     "Swarm Properties",
                     nk_rect(0, 0, 285, 155),
@@ -201,12 +195,22 @@ void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int 
 
         // maximum force
         slider(context, "Force:", 10.1, 50.0, &maxForce, 0.1);
-
-        // TODO view angle?
     }
     nk_end(context);
+}
 
-    // to control the musical properties
+/**
+ * Draw the musical properties UI
+ *
+ * @param nk_glfw *glfw
+ * @param nk_context *context
+ * @param unsigned int *VBO
+ * @param unsigned int *EBO
+ * @param unsigned int *VAO
+ *
+ * @return void
+ */
+void drawMusicalProperties(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
     if (nk_begin(context,
                     "Musical Properties",
                     nk_rect(glfw->display_width - 285, 0, 285, 245),
@@ -298,9 +302,16 @@ void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int 
         }
     }
     nk_end(context);
+}
 
-    context->style.window.fixed_background.data.color.a = 0;
-    // simple fps display
+/** Draw simple FPS display
+ *
+ * @param nk_glfw *glfw
+ * @param nk_context *context
+ *
+ * @return void
+ */
+void drawFPSDisplay(nk_glfw *glfw, nk_context *context) {
     if (nk_begin(context,
                     "fps",
                     nk_rect((glfw->display_width / 2) - 15, 0, 30, 25),
@@ -314,6 +325,30 @@ void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int 
         nk_label(context, fpsStream.str().c_str(), NK_TEXT_RIGHT);
     }
     nk_end(context);
+}
+
+/**
+ * Draw the UI elements
+ *
+ * @param nk_glfw *glfw
+ * @param nk_context *context
+ * @param unsigned int *VBO
+ * @param unsigned int *EBO
+ * @param unsigned int *VAO
+ *
+ * @return void
+ */
+void drawUI(nk_glfw *glfw, nk_context *context, unsigned int *VBO, unsigned int *EBO, unsigned int *VAO) {
+    // to control the swarm properties
+    context->style.window.fixed_background.data.color.a = 255;
+
+    drawSwarmProperties(context);
+
+    drawMusicalProperties(glfw, context, VBO, EBO, VAO);
+
+    drawFPSDisplay(glfw, context);
+
+    context->style.window.fixed_background.data.color.a = 0;
 }
 
 /**
