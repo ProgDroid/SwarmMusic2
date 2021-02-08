@@ -14,11 +14,28 @@ Changes from the previous version include
 - Changes to the code structure (e.g. new class for a Scale)
 - Code base improvements from usage of code quality tools
 
+## Dependencies
+You will need `autoconf` and `make` to compile [Synthesis Toolkit](https://github.com/thestk/stk).
+
+`cmake` is also needed to compile the app itself.
+
 ## How to run
-```
+Clone this repo with `--recurse-submodules` to get GLFW and STK
+
+Run the following commands to build the app
+```bash
+./stk.sh
+
+mkdir build
+
+cd build
+
+cmake ..
+
 make
-bin/swarmMusic
 ```
+
+Run the app from the project root with `bin/swarmMusic`
 
 ## Screenshots
 

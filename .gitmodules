@@ -1,0 +1,7 @@
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "lib/stk"]
+	path = lib/stk
+	url = https://github.com/thestk/stk.git
+	ignore = all
