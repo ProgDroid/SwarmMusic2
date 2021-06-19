@@ -1,6 +1,8 @@
 # SwarmMusic2
 A new version of [Swarm Music](https://github.com/ProgDroid/swarm-music)
 
+**Please also refer to the WIP Sparse Array ECS implementation in the [sparse_array_ecs](https://github.com/ProgDroid/SwarmMusic2/tree/sparse_array_ecs) branch.**
+
 Previous version in will remain in a separate repo for archival purposes. In there you can find a short presentation with some background and a functionality showcase of this app.
 
 The version found here is intended to be an experiment, a review of the original project after some professional experience and how I could use that to improve this project.
