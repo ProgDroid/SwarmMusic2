@@ -18,12 +18,23 @@ set(LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Set sources
 set(SOURCES
-    "${SRC_DIR}/main.cpp"
-    "${SRC_DIR}/Agent.cpp"
-    "${SRC_DIR}/Attractor.cpp"
-    "${SRC_DIR}/Scale.cpp"
-    "${SRC_DIR}/Swarm.cpp"
-    "${SRC_DIR}/Triplet.cpp"
+    "${SRC_DIR}/mainCopy.cpp"
+    "${SRC_DIR}/Managers/Component.cpp"
+    "${SRC_DIR}/Managers/Entity.cpp"
+    "${SRC_DIR}/Managers/Properties.cpp"
+    "${SRC_DIR}/Managers/System.cpp"
+    "${SRC_DIR}/Managers/Window.cpp"
+    "${SRC_DIR}/Systems/Move.cpp"
+    "${SRC_DIR}/Systems/Render.cpp"
+    "${SRC_DIR}/Systems/Swarm.cpp"
+    "${SRC_DIR}/Systems/UI.cpp"
+    "${SRC_DIR}/Consts.cpp"
+    "${SRC_DIR}/Utils.cpp"
+    # "${SRC_DIR}/Agent.cpp"
+    # "${SRC_DIR}/Attractor.cpp"
+    # "${SRC_DIR}/Scale.cpp"
+    # "${SRC_DIR}/Swarm.cpp"
+    # "${SRC_DIR}/Triplet.cpp"
 )
 
 set(CMAKE_CXX_STANDARD 14)

@@ -47,6 +47,8 @@ public:
         id = value;
     }
 
+    Shader();
+
     Shader(const char* vertexPath, const char* fragmentPath) {
         // read shaders from files
         std::string vertexCode, fragmentCode;

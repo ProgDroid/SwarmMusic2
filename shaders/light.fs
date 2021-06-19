@@ -19,11 +19,16 @@ out vec4 FragColour;
 in vec3 fragPos;
 in vec3 normal;
 in vec3 LightPos;
+in vec3 colour;
 
 uniform Light light;
-uniform Material material;
+
+uniform vec3 specular;
+uniform float shininess;
 
 void main() {
+    Material material = Material(colour, colour, specular, shininess);
+
     // ambient
     vec3 ambient = light.ambient * material.ambient;
 
